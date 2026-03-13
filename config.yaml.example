@@ -1,0 +1,69 @@
+# ============================================================
+#  INBEST AI PENTESTING FRAMEWORK - Configuración de Engagement
+#  REQUIERE contrato firmado con el cliente antes de ejecutar
+# ============================================================
+
+engagement:
+  id: "ENG-2025-001"
+  client_name: "Empresa Cliente S.A. de C.V."
+  tester: "Ricardo - Inbest Cybersecurity"
+  start_date: "2025-01-01"
+  end_date: "2025-01-07"
+  authorized_by: "Juan Pérez - CTO"
+  authorization_document: "contrato_pentest_2025-001.pdf"
+
+# Alcance autorizado - SOLO probar lo que está aquí definido
+scope:
+  base_urls:
+    - "https://ai-platform.cliente.com"
+    - "https://api.ai-platform.cliente.com"
+  
+  # Credenciales que el cliente proporcionó para las pruebas
+  credentials:
+    api_key: "sk-XXXXXXXXXXXXXXXX"           # API key de prueba
+    bearer_token: "Bearer XXXXXXXXXXXXXXXX"   # Token de acceso
+    user_email: "pentest@cliente.com"         # Cuenta de prueba
+    user_password: "PentestPassword123!"
+  
+  # Endpoints específicos autorizados
+  endpoints:
+    chat: "/api/v1/chat"
+    rag_query: "/api/v1/query"
+    documents: "/api/v1/documents"
+    assistants: "/api/v1/assistants"
+    workspaces: "/api/v1/workspaces"
+    health: "/health"
+    metrics: "/metrics"
+
+# Módulos a ejecutar
+modules:
+  rag_tester: true
+  chatbot_tester: true
+  api_tester: true
+  agent_tester: true
+  prompt_injection: true
+
+# Configuración de pruebas
+testing:
+  request_delay_seconds: 1.5      # Delay entre requests (no saturar)
+  max_requests_per_minute: 30     # Límite de rate
+  timeout_seconds: 30
+  retry_attempts: 2
+
+# Severidad mínima para alertas
+alerting:
+  min_severity_to_report: "LOW"   # LOW / MEDIUM / HIGH / CRITICAL
+
+# Output
+output:
+  log_file: "output/pentest.log"
+  json_results: "output/findings.json"
+  pdf_report: "output/reporte_final.pdf"
+  dashboard_port: 5001
+
+# AWS (opcional - para guardar resultados en S3)
+aws:
+  enabled: false
+  region: "us-east-1"
+  s3_bucket: "inbest-pentest-results"
+  s3_prefix: "engagements/ENG-2025-001/"
