@@ -36,7 +36,7 @@ def handler(event, context):
 
     try:
         # Lanzar tarea ECS Fargate con XIPE
-        task_arn = _launch_xipe_task(engagement_id, config_path)
+        task_arn = _launch_xipe_task(engagement_id, config_path, event.get("target_url",""), event.get("client_name",""))
 
         return {
             "statusCode": 200,
@@ -57,7 +57,7 @@ def handler(event, context):
         }
 
 
-def _launch_xipe_task(engagement_id: str, config_ssm_path: str) -> str:
+def _launch_xipe_task(engagement_id: str, config_ssm_path: str, target_url: str = "", client_name: str = "") -> str:
     """Lanza una tarea ECS Fargate con XIPE."""
 
     cluster      = os.environ["ECS_CLUSTER"]
@@ -91,6 +91,8 @@ def _launch_xipe_task(engagement_id: str, config_ssm_path: str) -> str:
                     {"name": "S3_BUCKET",          "value": s3_bucket},
                     {"name": "S3_PREFIX",          "value": f"engagements/{engagement_id}/"},
                     {"name": "TEAMS_WEBHOOK_URL",  "value": teams_webhook},
+                    {"name": "TARGET_URL",        "value": target_url},
+                    {"name": "CLIENT_NAME",       "value": client_name},
                 ],
             }]
         },

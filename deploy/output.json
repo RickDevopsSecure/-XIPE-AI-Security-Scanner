@@ -1,0 +1,1 @@
+{"statusCode": 200, "body": "{\"message\": \"XIPE task launched\", \"task_arn\": \"arn:aws:ecs:us-east-1:205210536414:task/xipe-cluster/bbad6f91e9c54908a1eb72b58874eb7c\", \"engagement_id\": \"ENG-AUTO-20260314-2119\", \"timestamp\": \"2026-03-14T21:19:42.714150\"}"}

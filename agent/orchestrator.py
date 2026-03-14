@@ -13,6 +13,7 @@ import yaml
 
 from agent.finding import Finding, Severity
 from modules.prompt_injection import PromptInjectionTester
+from modules.web_recon import WebReconModule
 from modules.rag_tester import RAGTester
 from modules.api_tester import APITester
 from modules.agent_tester import AgentTester
@@ -25,6 +26,11 @@ class PentestOrchestrator:
 
     def __init__(self, config_path: str):
         self.config = self._load_config(config_path)
+        import os as _os
+        if _os.environ.get("TARGET_URL"):
+            self.config["scope"]["base_urls"] = [_os.environ["TARGET_URL"]]
+        if _os.environ.get("CLIENT_NAME"):
+            self.config["engagement"]["client_name"] = _os.environ["CLIENT_NAME"]
         self._apply_env_overrides()          # SSM / env vars tienen prioridad
         self.engagement_id = self.config["engagement"]["id"]
 
@@ -54,6 +60,10 @@ class PentestOrchestrator:
         self._print_banner()
         self._validate_authorization()
         self._verify_connectivity()
+
+        # Recon primero — descubre endpoints automáticamente
+        recon = WebReconModule(self.config, self.logger, self.http_client)
+        self.all_findings.extend(recon.run())
 
         modules_config = self.config["modules"]
 
@@ -190,6 +200,19 @@ class PentestOrchestrator:
                     self.config[section] = {}
                 self.config[section][key] = val
 
+        if os.environ.get("TARGET_URL"):
+            self.config["scope"]["base_urls"] = [os.environ["TARGET_URL"]]
+        if os.environ.get("CLIENT_NAME"):
+            self.config["engagement"]["client_name"] = os.environ["CLIENT_NAME"]
+
+        # Override base_url desde TARGET_URL
+        target_url = os.environ.get("TARGET_URL")
+        if target_url:
+            self.config["scope"]["base_urls"] = [target_url]
+
+        client_name = os.environ.get("CLIENT_NAME")
+        if client_name:
+            self.config["engagement"]["client_name"] = client_name
         if os.environ.get("S3_BUCKET"):
             self.config.setdefault("aws", {})["enabled"] = True
 
