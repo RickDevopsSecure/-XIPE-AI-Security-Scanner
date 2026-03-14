@@ -1,63 +1,65 @@
-# Inbest AI Pentesting Framework
+# XIPE — AI Security Scanner
 
-> **Herramienta de uso exclusivo para engagements de seguridad autorizados.**
-> Desarrollado por [Inbest Cybersecurity](https://inbest.cloud).
+> **Where the blade meets the model.**
+> Herramienta de AI pentesting para engagements autorizados. Desarrollado por [Inbest Cybersecurity](https://inbest.cloud).
+
+![Python](https://img.shields.io/badge/python-3.11+-blue?style=flat-square)
+![License](https://img.shields.io/badge/use-authorized_engagements_only-red?style=flat-square)
+![OWASP](https://img.shields.io/badge/OWASP-LLM_Top_10-orange?style=flat-square)
+![Status](https://img.shields.io/badge/status-active_development-green?style=flat-square)
+
+---
+
+## ¿Qué es XIPE?
+
+XIPE es un framework ofensivo de seguridad diseñado para evaluar plataformas de IA contra el **OWASP LLM Top 10 (2025)**. Cubre:
+
+- 🔴 **Prompt Injection** (LLM01) — Direct e indirect injection
+- 🔴 **System Prompt Leakage** (LLM07) — Extracción de instrucciones del sistema
+- 🟠 **RAG Security** (LLM08) — Enumeración, cross-tenant leakage, data poisoning
+- 🟠 **Excessive Agency** (LLM06) — Tool abuse, workflow bypass
+- 🟡 **API Security** — Auth bypass, IDOR, rate limiting, security headers
+- 🟡 **Sensitive Data Exposure** (LLM02) — PII, credenciales, info financiera
+- 🔵 **Improper Output Handling** (LLM05) — XSS/SQLi via output del LLM
+
+Genera automáticamente un **reporte PDF profesional** listo para entregar al cliente y un **dashboard web en tiempo real**.
 
 ---
 
 ## Arquitectura
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    INBEST AI PENTEST                     │
-│                                                          │
-│  main.py  ──►  orchestrator.py                          │
-│                      │                                   │
-│         ┌────────────┼────────────┐────────────┐         │
-│         ▼            ▼            ▼            ▼         │
-│    api_tester   prompt_inj    rag_tester  agent_tester   │
-│         │            │            │            │         │
-│         └────────────┴────────────┴────────────┘         │
-│                      │                                   │
-│               findings: List[Finding]                    │
-│                      │                                   │
-│         ┌────────────┴────────────┐                      │
-│         ▼                         ▼                      │
-│    pdf_report.py           dashboard.py                  │
-│    (PDF profesional)       (Flask + HTML)                │
-│         │                         │                      │
-│    output/reporte.pdf      :5001/                        │
-│    output/findings.json                                  │
-│                                                          │
-│  (Opcional) ──► AWS S3                                   │
-└─────────────────────────────────────────────────────────┘
+main.py
+  └── orchestrator.py
+        ├── modules/api_tester.py        → AUTH, IDOR, LLM10
+        ├── modules/prompt_injection.py  → LLM01, LLM07, LLM06
+        ├── modules/rag_tester.py        → LLM08, LLM02, LLM04
+        └── modules/agent_tester.py      → LLM06, LLM05, LLM01
+              │
+              ▼
+        reporting/pdf_report.py    → PDF profesional
+        reporting/dashboard.py     → Dashboard Flask :5001
+              │
+              ▼
+        output/findings.json
+        output/reporte_final.pdf
+        output/pentest.log
+        (opcional) → AWS S3
 ```
-
-## Módulos de Testing (OWASP LLM Top 10)
-
-| Módulo | OWASP | Qué prueba |
-|---|---|---|
-| `api_tester` | AUTH, IDOR, LLM10 | Auth bypass, IDOR, rate limiting, headers |
-| `prompt_injection` | LLM01, LLM07, LLM06 | Direct injection, system prompt leak, agency |
-| `rag_tester` | LLM08, LLM02, LLM04 | Doc enumeration, cross-tenant, sensitive data |
-| `agent_tester` | LLM06, LLM05, LLM01 | Tool abuse, workflow bypass, output handling |
 
 ## Instalación
 
 ```bash
-# 1. Clonar / copiar el proyecto
-cd inbest-ai-pentest
+git clone https://github.com/RickDevopsSecure/XIPE-AI-Security-Scanner
+cd XIPE-AI-Security-Scanner
 
-# 2. Crear entorno virtual
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate       # Windows: venv\Scripts\activate
 
-# 3. Instalar dependencias
 pip install -r requirements.txt
 
-# 4. Configurar el engagement
 cp config.yaml.example config.yaml
-# Editar config.yaml con los datos del cliente
+# Editar config.yaml con los datos del engagement
 ```
 
 ## Uso
@@ -66,84 +68,79 @@ cp config.yaml.example config.yaml
 # Ejecución básica
 python main.py --config config.yaml
 
-# Con dashboard en tiempo real
+# Con dashboard en tiempo real (http://localhost:5001)
 python main.py --config config.yaml --dashboard
 
-# Con puerto personalizado
+# Puerto personalizado
 python main.py --config config.yaml --dashboard --dashboard-port 8080
-```
-
-## Despliegue en AWS ECS
-
-```bash
-# 1. Build de la imagen Docker
-cd deploy
-docker build -f Dockerfile -t inbest-ai-pentest ..
-
-# 2. Crear ECR repository
-aws ecr create-repository --repository-name inbest-ai-pentest --region us-east-1
-
-# 3. Push a ECR
-aws ecr get-login-password --region us-east-1 | \
-  docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
-
-docker tag inbest-ai-pentest:latest <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/inbest-ai-pentest:latest
-docker push <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/inbest-ai-pentest:latest
-
-# 4. Crear cluster ECS (Fargate)
-aws ecs create-cluster --cluster-name inbest-pentest-cluster
-
-# 5. Crear S3 bucket para resultados
-aws s3 mb s3://inbest-pentest-results-<ACCOUNT_ID>
-
-# 6. Desplegar task (usar consola AWS o CLI con task definition)
-# Montar config.yaml como secret en AWS Secrets Manager
-# Mapear puerto 5001 para el dashboard
-```
-
-## Output del Engagement
-
-```
-output/
-├── pentest.log          # Log estructurado JSON
-├── findings.json        # Hallazgos en JSON (para el dashboard)
-└── reporte_final.pdf    # Reporte profesional para el cliente
 ```
 
 ## Estructura del Proyecto
 
 ```
-inbest-ai-pentest/
-├── main.py                    # Entry point
+XIPE-AI-Security-Scanner/
+├── main.py                        # Entry point
 ├── requirements.txt
-├── config.yaml.example        # Plantilla de configuración
+├── config.yaml.example            # Plantilla de configuración
+├── LEGAL.md                       # Términos de uso
 ├── agent/
-│   ├── orchestrator.py        # Orquestador principal
-│   └── finding.py             # Modelo de datos Finding
+│   ├── orchestrator.py            # Orquestador principal
+│   └── finding.py                 # Modelo de datos Finding (OWASP)
 ├── modules/
-│   ├── api_tester.py          # Auth, IDOR, headers, rate limiting
-│   ├── prompt_injection.py    # LLM01, LLM07, LLM06
-│   ├── rag_tester.py          # LLM08, LLM02, cross-tenant
-│   └── agent_tester.py        # LLM06, LLM05, tool abuse
+│   ├── api_tester.py              # Auth, IDOR, headers, rate limiting
+│   ├── prompt_injection.py        # LLM01, LLM07, LLM06
+│   ├── rag_tester.py              # LLM08, LLM02, cross-tenant
+│   └── agent_tester.py            # LLM06, LLM05, tool abuse
 ├── reporting/
-│   ├── pdf_report.py          # Reporte PDF profesional
-│   └── dashboard.py           # Dashboard Flask en tiempo real
+│   ├── pdf_report.py              # Reporte PDF profesional
+│   └── dashboard.py               # Dashboard Flask en tiempo real
 ├── utils/
-│   └── logger.py              # Logger estructurado con Rich
+│   └── logger.py                  # Logger estructurado con Rich
 └── deploy/
-    └── Dockerfile             # Para ECS / Cloud Run
+    └── Dockerfile                 # Para AWS ECS / Cloud Run
+```
+
+## Despliegue en AWS ECS
+
+```bash
+# Build
+docker build -f deploy/Dockerfile -t xipe-ai-scanner .
+
+# Push a ECR
+aws ecr create-repository --repository-name xipe-ai-scanner --region us-east-1
+aws ecr get-login-password --region us-east-1 | \
+  docker login --username AWS --password-stdin <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+
+docker tag xipe-ai-scanner:latest <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/xipe-ai-scanner:latest
+docker push <ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com/xipe-ai-scanner:latest
+
+# Cluster Fargate
+aws ecs create-cluster --cluster-name xipe-cluster
 ```
 
 ## Checklist Pre-Engagement
 
-- [ ] Contrato firmado con el cliente
-- [ ] Documento de autorización firmado
-- [ ] Alcance técnico definido (URLs, fechas, módulos)
-- [ ] Credenciales de prueba proporcionadas por el cliente
-- [ ] config.yaml configurado y revisado
-- [ ] Coordinación con el equipo técnico del cliente (notificar inicio/fin)
-- [ ] Canal de comunicación de emergencia definido
+```
+[ ] Contrato firmado con el cliente
+[ ] Documento de autorización escrita
+[ ] Alcance técnico definido (URLs, fechas, módulos)
+[ ] Credenciales de prueba proporcionadas por el cliente
+[ ] config.yaml configurado y revisado
+[ ] Coordinación con equipo técnico del cliente
+[ ] Canal de comunicación de emergencia definido
+```
+
+## Output
+
+```
+output/
+├── pentest.log          # Log estructurado JSON por evento
+├── findings.json        # Todos los hallazgos (dashboard + integración)
+└── reporte_final.pdf    # Reporte ejecutivo + técnico para el cliente
+```
 
 ---
 
-*Inbest Cybersecurity — Guadalajara, México*
+> ⚠️ **Uso exclusivo para engagements autorizados.** Ver [LEGAL.md](./LEGAL.md).
+
+*XIPE by Inbest Cybersecurity — Guadalajara, México*
