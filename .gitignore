@@ -3,3 +3,11 @@ __pycache__/
 .DS_Store
 output/
 config.yaml
+deploy/.terraform/
+deploy/*.tfstate
+deploy/*.tfstate.backup
+deploy/terraform.tfvars
+deploy/*.zip
+deploy/output.json
+output.json
+config_tmp.yaml

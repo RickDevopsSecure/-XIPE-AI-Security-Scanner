@@ -1,6 +1,0 @@
-aws_region          = "us-east-1"
-vpc_id              = "vpc-6f2f420a"
-subnet_id           = "subnet-4d53da3a"
-teams_webhook_url   = "https://inbest.webhook.office.com/webhookb2/75ca72c2-75a5-4f99-8fb8-904abc3aecd3@261bc682-cd4a-4ee7-8ae4-9e82e1342e72/IncomingWebhook/e25a3518ce734a9eb9e057e266998586/6fd067c9-4ae7-4e38-915b-e9fd402fa115/V26K3ZOtQG7GeqUcyvL9md1bs3D2ILgRzbBBgbG39m3Fo1"
-ecr_image_uri       = "205210536414.dkr.ecr.us-east-1.amazonaws.com/xipe-ai-scanner:latest"
-schedule_expression = "cron(0 8 * * ? *)"
