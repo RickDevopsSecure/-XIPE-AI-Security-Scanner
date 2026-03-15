@@ -5,922 +5,821 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>XIPE — AI Security Scanner | Inbest Cybersecurity</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg:        #070A0F;
-    --bg2:       #0D1117;
-    --bg3:       #161B22;
-    --border:    #21262D;
-    --border2:   #30363D;
-    --text:      #E6EDF3;
-    --muted:     #8B949E;
-    --dim:       #484F58;
-    --accent:    #FF4500;
-    --accent2:   #FF6B35;
-    --blue:      #58A6FF;
-    --green:     #3FB950;
-    --yellow:    #F0883E;
-    --red:       #FF5449;
-    --purple:    #BC8CFF;
-  }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    font-family: 'Syne', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
-    overflow-x: hidden;
-  }
-
-  /* ── NOISE TEXTURE ── */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 0;
-    opacity: 0.4;
-  }
-
-  /* ── NAV ── */
-  nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 5vw;
-    height: 64px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(7, 10, 15, 0.85);
-    backdrop-filter: blur(12px);
-  }
-
-  .nav-logo {
-    font-family: 'Space Mono', monospace;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--text);
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .nav-logo .logo-mark {
-    width: 28px; height: 28px;
-    background: var(--accent);
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .nav-links {
-    display: flex;
-    gap: 2rem;
-    list-style: none;
-  }
-
-  .nav-links a {
-    color: var(--muted);
-    text-decoration: none;
-    font-size: 0.85rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    transition: color 0.2s;
-  }
-
-  .nav-links a:hover { color: var(--text); }
-
-  .nav-cta {
-    background: var(--accent);
-    color: white !important;
-    padding: 8px 20px;
-    border-radius: 4px;
-    font-size: 0.8rem !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.08em;
-    transition: background 0.2s, transform 0.1s !important;
-  }
-
-  .nav-cta:hover {
-    background: var(--accent2) !important;
-    color: white !important;
-    transform: translateY(-1px);
-  }
-
-  /* ── HERO ── */
-  .hero {
-    position: relative;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    padding: 120px 5vw 80px;
-    overflow: hidden;
-  }
-
-  .hero-grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(255,69,0,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,69,0,0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
-  }
-
-  .hero-glow {
-    position: absolute;
-    top: -200px;
-    right: -200px;
-    width: 700px;
-    height: 700px;
-    background: radial-gradient(circle, rgba(255,69,0,0.08) 0%, transparent 70%);
-    pointer-events: none;
-  }
-
-  .hero-content {
-    position: relative;
-    z-index: 1;
-    max-width: 680px;
-  }
-
-  .hero-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255,69,0,0.1);
-    border: 1px solid rgba(255,69,0,0.3);
-    color: var(--accent2);
-    padding: 6px 14px;
-    border-radius: 2px;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 2rem;
-  }
-
-  .hero-badge::before {
-    content: '';
-    width: 6px; height: 6px;
-    background: var(--accent);
-    border-radius: 50%;
-    animation: blink 1.5s infinite;
-  }
-
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-  .hero h1 {
-    font-size: clamp(3rem, 7vw, 5.5rem);
-    font-weight: 800;
-    line-height: 0.95;
-    letter-spacing: -0.03em;
-    margin-bottom: 1.5rem;
-  }
-
-  .hero h1 .highlight {
-    color: var(--accent);
-    position: relative;
-    display: inline-block;
-  }
-
-  .hero h1 .highlight::after {
-    content: '';
-    position: absolute;
-    bottom: 2px;
-    left: 0; right: 0;
-    height: 3px;
-    background: var(--accent);
-    opacity: 0.4;
-  }
-
-  .hero-sub {
-    font-size: 1.15rem;
-    color: var(--muted);
-    max-width: 520px;
-    margin-bottom: 2.5rem;
-    font-weight: 400;
-    line-height: 1.7;
-  }
-
-  .hero-actions {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: white;
-    padding: 14px 28px;
-    border-radius: 4px;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 0.9rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    transition: all 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .btn-primary:hover {
-    background: var(--accent2);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(255,69,0,0.3);
-  }
-
-  .btn-secondary {
-    background: transparent;
-    color: var(--text);
-    padding: 14px 28px;
-    border-radius: 4px;
-    border: 1px solid var(--border2);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.9rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    transition: all 0.2s;
-  }
-
-  .btn-secondary:hover {
-    border-color: var(--muted);
-    background: var(--bg3);
-  }
-
-  /* ── TERMINAL ── */
-  .terminal-wrap {
-    position: absolute;
-    right: 5vw;
-    top: 50%;
-    transform: translateY(-50%);
-    width: min(520px, 45vw);
-    z-index: 1;
-  }
-
-  .terminal {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.72rem;
-    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
-  }
-
-  .terminal-bar {
-    background: var(--bg3);
-    border-bottom: 1px solid var(--border);
-    padding: 10px 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .dot { width: 10px; height: 10px; border-radius: 50%; }
-  .dot-red { background: #FF5F57; }
-  .dot-yellow { background: #FFBD2E; }
-  .dot-green { background: #28CA41; }
-
-  .terminal-title {
-    margin-left: 8px;
-    color: var(--muted);
-    font-size: 0.7rem;
-    letter-spacing: 0.05em;
-  }
-
-  .terminal-body { padding: 16px; line-height: 1.9; }
-
-  .t-dim    { color: var(--dim); }
-  .t-muted  { color: var(--muted); }
-  .t-green  { color: var(--green); }
-  .t-red    { color: var(--red); }
-  .t-yellow { color: var(--yellow); }
-  .t-blue   { color: var(--blue); }
-  .t-accent { color: var(--accent); font-weight: 700; }
-  .t-purple { color: var(--purple); }
-
-  /* ── STATS ── */
-  .stats {
-    padding: 60px 5vw;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    background: var(--bg2);
-  }
-
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 40px;
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-
-  .stat-item { text-align: center; }
-
-  .stat-number {
-    font-size: 3rem;
-    font-weight: 800;
-    line-height: 1;
-    margin-bottom: 8px;
-    letter-spacing: -0.02em;
-  }
-
-  .stat-label {
-    font-size: 0.8rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-weight: 600;
-  }
-
-  /* ── SECTIONS ── */
-  section { padding: 100px 5vw; position: relative; }
-
-  .section-tag {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 1rem;
-  }
-
-  .section-title {
-    font-size: clamp(2rem, 4vw, 3rem);
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-    margin-bottom: 1.5rem;
-    max-width: 600px;
-  }
-
-  .section-sub {
-    font-size: 1rem;
-    color: var(--muted);
-    max-width: 540px;
-    line-height: 1.8;
-    margin-bottom: 3rem;
-  }
-
-  /* ── MODULES GRID ── */
-  .modules-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-    max-width: 1100px;
-  }
-
-  .module-card {
-    background: var(--bg2);
-    padding: 2rem;
-    transition: background 0.2s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .module-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0;
-    width: 3px;
-    height: 100%;
-    background: var(--accent);
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  .module-card:hover { background: var(--bg3); }
-  .module-card:hover::before { opacity: 1; }
-
-  .module-icon {
-    width: 40px; height: 40px;
-    background: rgba(255,69,0,0.1);
-    border: 1px solid rgba(255,69,0,0.2);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-  }
-
-  .module-name {
-    font-size: 0.95rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-  }
-
-  .module-desc {
-    font-size: 0.82rem;
-    color: var(--muted);
-    line-height: 1.6;
-    margin-bottom: 1rem;
-  }
-
-  .module-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .tag {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.65rem;
-    padding: 3px 8px;
-    border-radius: 2px;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-  }
-
-  .tag-red    { background: rgba(255,84,73,0.15);  color: #FF5449; }
-  .tag-orange { background: rgba(255,69,0,0.15);   color: var(--accent2); }
-  .tag-blue   { background: rgba(88,166,255,0.15); color: var(--blue); }
-  .tag-purple { background: rgba(188,140,255,0.15);color: var(--purple); }
-  .tag-green  { background: rgba(63,185,80,0.15);  color: var(--green); }
-  .tag-yellow { background: rgba(240,136,62,0.15); color: var(--yellow); }
-
-  /* ── HOW IT WORKS ── */
-  .how-bg { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-
-  .steps {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 2px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-    max-width: 1100px;
-  }
-
-  .step {
-    background: var(--bg2);
-    padding: 2.5rem 2rem;
-    position: relative;
-  }
-
-  .step-num {
-    font-family: 'Space Mono', monospace;
-    font-size: 3.5rem;
-    font-weight: 700;
-    color: var(--border2);
-    line-height: 1;
-    margin-bottom: 1.5rem;
-  }
-
-  .step-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 0.75rem;
-  }
-
-  .step-desc {
-    font-size: 0.85rem;
-    color: var(--muted);
-    line-height: 1.7;
-  }
-
-  /* ── FINDINGS SAMPLE ── */
-  .findings-sample {
-    max-width: 1100px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .finding-row {
-    display: grid;
-    grid-template-columns: 120px 1fr auto;
-    align-items: center;
-    gap: 16px;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 16px 20px;
-    transition: border-color 0.2s;
-  }
-
-  .finding-row:hover { border-color: var(--border2); }
-
-  .sev-badge {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 3px;
-    text-align: center;
-    letter-spacing: 0.05em;
-  }
-
-  .sev-critical { background: rgba(183,28,28,0.2); color: #FF5449; border: 1px solid rgba(183,28,28,0.3); }
-  .sev-high     { background: rgba(229,57,53,0.15); color: #FF7B72; border: 1px solid rgba(229,57,53,0.25); }
-  .sev-medium   { background: rgba(245,124,0,0.15); color: #F0883E; border: 1px solid rgba(245,124,0,0.25); }
-
-  .finding-title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .finding-cat {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--muted);
-    margin-top: 3px;
-  }
-
-  .finding-module {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.68rem;
-    color: var(--dim);
-    white-space: nowrap;
-  }
-
-  /* ── CTA ── */
-  .cta-section {
-    text-align: center;
-    background: var(--bg2);
-    border-top: 1px solid var(--border);
-  }
-
-  .cta-box {
-    max-width: 640px;
-    margin: 0 auto;
-  }
-
-  .cta-box h2 {
-    font-size: clamp(2rem, 4vw, 3rem);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    margin-bottom: 1rem;
-  }
-
-  .cta-box p {
-    color: var(--muted);
-    margin-bottom: 2.5rem;
-    font-size: 1rem;
-    line-height: 1.7;
-  }
-
-  .cta-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  /* ── FOOTER ── */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 40px 5vw;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-
-  .footer-left {
-    font-family: 'Space Mono', monospace;
-    font-size: 0.8rem;
-    color: var(--dim);
-  }
-
-  .footer-right {
-    font-size: 0.8rem;
-    color: var(--dim);
-  }
-
-  .footer-right a {
-    color: var(--muted);
-    text-decoration: none;
-    transition: color 0.2s;
-  }
-
-  .footer-right a:hover { color: var(--text); }
-
-  /* ── DIVIDER ── */
-  .divider {
-    width: 48px;
-    height: 2px;
-    background: var(--accent);
-    margin: 1.5rem 0;
-  }
-
-  /* ── ANIMATIONS ── */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(24px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .fade-up {
-    animation: fadeUp 0.6s ease forwards;
-    opacity: 0;
-  }
-
-  .delay-1 { animation-delay: 0.1s; }
-  .delay-2 { animation-delay: 0.2s; }
-  .delay-3 { animation-delay: 0.3s; }
-  .delay-4 { animation-delay: 0.4s; }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 900px) {
-    .terminal-wrap { display: none; }
-    .hero-content { max-width: 100%; }
-  }
-
-  @media (max-width: 600px) {
-    .nav-links { display: none; }
-    .finding-row { grid-template-columns: 90px 1fr; }
-    .finding-module { display: none; }
-  }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#FF2200;
+  --red2:#FF4422;
+  --dark:#080A0D;
+  --dark2:#0D1117;
+  --dark3:#161B22;
+  --border:#1E2530;
+  --text:#E6EDF3;
+  --muted:#6E7681;
+  --dim:#30363D;
+  --green:#00FF41;
+  --amber:#FFB800;
+}
+
+html{scroll-behavior:smooth}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--dark);
+  color:var(--text);
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* CUSTOM CURSOR */
+.cursor{
+  position:fixed;
+  width:8px;height:8px;
+  background:var(--red);
+  border-radius:50%;
+  pointer-events:none;
+  z-index:9999;
+  transform:translate(-50%,-50%);
+  transition:width .1s,height .1s;
+  mix-blend-mode:screen;
+}
+.cursor-ring{
+  position:fixed;
+  width:30px;height:30px;
+  border:1px solid rgba(255,34,0,.4);
+  border-radius:50%;
+  pointer-events:none;
+  z-index:9998;
+  transform:translate(-50%,-50%);
+  transition:all .12s ease;
+}
+
+/* SCANLINES */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);
+  pointer-events:none;
+  z-index:1000;
+}
+
+/* NOISE */
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:999;
+  opacity:.6;
+}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 5vw;height:60px;
+  border-bottom:1px solid var(--border);
+  background:rgba(8,10,13,.9);
+  backdrop-filter:blur(20px);
+}
+.nav-logo{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:1rem;font-weight:700;
+  color:var(--text);text-decoration:none;
+  display:flex;align-items:center;gap:10px;
+}
+.logo-hex{
+  width:26px;height:26px;
+  background:var(--red);
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  animation:pulse-hex 2s infinite;
+}
+@keyframes pulse-hex{0%,100%{box-shadow:0 0 0 0 rgba(255,34,0,.4)}50%{box-shadow:0 0 20px 4px rgba(255,34,0,.2)}}
+.nav-right{display:flex;gap:2rem;align-items:center}
+.nav-link{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);text-decoration:none;
+  transition:color .2s;
+}
+.nav-link:hover{color:var(--text)}
+.nav-cta{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--red);border:1px solid var(--red);
+  padding:7px 16px;text-decoration:none;
+  transition:all .2s;
+  position:relative;overflow:hidden;
+}
+.nav-cta::before{
+  content:'';position:absolute;inset:0;
+  background:var(--red);transform:translateX(-101%);
+  transition:transform .2s;
+}
+.nav-cta:hover{color:#000}
+.nav-cta:hover::before{transform:translateX(0)}
+.nav-cta span{position:relative;z-index:1}
+
+/* HERO */
+.hero{
+  min-height:100vh;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  align-items:center;
+  padding:80px 5vw 60px;
+  gap:4rem;
+  position:relative;
+  overflow:hidden;
+}
+
+.hero-grid-bg{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,34,0,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,34,0,.04) 1px,transparent 1px);
+  background-size:80px 80px;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black,transparent);
+}
+
+.hero-glow{
+  position:absolute;
+  top:-300px;left:-200px;
+  width:800px;height:800px;
+  background:radial-gradient(circle,rgba(255,34,0,.06) 0%,transparent 60%);
+  pointer-events:none;
+}
+
+.hero-content{position:relative;z-index:1}
+
+.hero-tag{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--red);
+  display:flex;align-items:center;gap:8px;
+  margin-bottom:1.5rem;
+}
+.hero-tag::before{
+  content:'';width:6px;height:6px;
+  background:var(--red);border-radius:50%;
+  animation:blink 1.2s infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+.hero h1{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(4rem,9vw,8rem);
+  line-height:.9;
+  letter-spacing:.02em;
+  margin-bottom:1.5rem;
+}
+.hero h1 .line1{
+  display:block;
+  color:var(--text);
+}
+.hero h1 .line2{
+  display:block;
+  color:var(--red);
+  position:relative;
+}
+.hero h1 .line3{
+  display:block;
+  color:transparent;
+  -webkit-text-stroke:1px rgba(255,255,255,.2);
+}
+
+.hero-sub{
+  font-size:1rem;
+  color:var(--muted);
+  max-width:480px;
+  line-height:1.8;
+  margin-bottom:2.5rem;
+}
+
+.hero-actions{display:flex;gap:1rem;flex-wrap:wrap}
+
+.btn-primary{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;
+  background:var(--red);color:#000;
+  padding:14px 28px;text-decoration:none;
+  font-weight:700;
+  transition:all .2s;
+  position:relative;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-primary:hover{background:var(--red2);transform:translateY(-2px);box-shadow:0 8px 30px rgba(255,34,0,.3)}
+
+.btn-ghost{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;
+  background:transparent;color:var(--text);
+  padding:14px 28px;text-decoration:none;
+  border:1px solid var(--dim);
+  transition:all .2s;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-ghost:hover{border-color:var(--muted);background:rgba(255,255,255,.03)}
+
+/* TERMINAL */
+.terminal-wrap{position:relative;z-index:1}
+
+.terminal{
+  background:var(--dark2);
+  border:1px solid var(--border);
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.72rem;
+  position:relative;
+  overflow:hidden;
+}
+
+.terminal::before{
+  content:'';position:absolute;
+  top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--red),transparent);
+  animation:scan-line 3s linear infinite;
+}
+@keyframes scan-line{0%{transform:translateY(0)}100%{transform:translateY(400px)}}
+
+.term-bar{
+  background:var(--dark3);
+  border-bottom:1px solid var(--border);
+  padding:10px 16px;
+  display:flex;align-items:center;gap:8px;
+}
+.dot{width:10px;height:10px;border-radius:50%}
+.d-r{background:#FF5F57}.d-y{background:#FFBD2E}.d-g{background:#28CA41}
+.term-title{margin-left:8px;color:var(--muted);font-size:.68rem;letter-spacing:.05em}
+
+.term-body{padding:20px;line-height:2.1;min-height:280px}
+
+.t-prompt{color:var(--red)}
+.t-cmd{color:var(--text)}
+.t-dim{color:var(--dim)}
+.t-muted{color:var(--muted)}
+.t-green{color:var(--green)}
+.t-amber{color:var(--amber)}
+.t-red{color:#FF5449;font-weight:700}
+.t-blue{color:#79C0FF}
+.t-critical{color:#FF5449;font-weight:700}
+
+.cursor-blink{
+  display:inline-block;
+  width:8px;height:14px;
+  background:var(--green);
+  vertical-align:middle;
+  animation:cursor-blink .8s step-end infinite;
+}
+@keyframes cursor-blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* STATS BAR */
+.stats-bar{
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  background:var(--dark2);
+  padding:40px 5vw;
+}
+.stats-inner{
+  max-width:1100px;margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:0;
+}
+.stat-item{
+  text-align:center;
+  padding:20px;
+  border-right:1px solid var(--border);
+  position:relative;
+}
+.stat-item:last-child{border-right:none}
+.stat-num{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:3.5rem;
+  line-height:1;
+  margin-bottom:6px;
+  display:block;
+}
+.stat-label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.65rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+
+/* SECTIONS */
+section{padding:100px 5vw;position:relative}
+.section-tag{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--red);margin-bottom:1rem;
+  display:flex;align-items:center;gap:8px;
+}
+.section-tag::before{content:'//';color:var(--dim)}
+.section-title{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(2.5rem,5vw,4.5rem);
+  letter-spacing:.02em;
+  line-height:1;
+  margin-bottom:1.5rem;
+}
+.section-sub{
+  font-size:1rem;color:var(--muted);
+  max-width:560px;line-height:1.8;
+  margin-bottom:3.5rem;
+}
+
+/* MODULES */
+.modules-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:1px;
+  background:var(--border);
+  border:1px solid var(--border);
+  max-width:1100px;
+}
+.module-card{
+  background:var(--dark2);
+  padding:2rem;
+  position:relative;
+  overflow:hidden;
+  transition:background .2s;
+}
+.module-card::after{
+  content:'';
+  position:absolute;
+  left:0;top:0;bottom:0;
+  width:2px;
+  background:var(--red);
+  transform:scaleY(0);
+  transform-origin:bottom;
+  transition:transform .3s ease;
+}
+.module-card:hover{background:var(--dark3)}
+.module-card:hover::after{transform:scaleY(1)}
+
+.module-num{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.65rem;
+  color:var(--dim);
+  letter-spacing:.1em;
+  margin-bottom:1rem;
+}
+.module-name{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:1.6rem;
+  letter-spacing:.05em;
+  margin-bottom:.75rem;
+}
+.module-desc{font-size:.85rem;color:var(--muted);line-height:1.7;margin-bottom:1.2rem}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.6rem;letter-spacing:.08em;
+  padding:3px 8px;
+  border:1px solid;
+}
+.tag-r{color:#FF5449;border-color:rgba(255,84,73,.3);background:rgba(255,84,73,.08)}
+.tag-o{color:var(--red2);border-color:rgba(255,68,34,.3);background:rgba(255,68,34,.08)}
+.tag-b{color:#79C0FF;border-color:rgba(121,192,255,.3);background:rgba(121,192,255,.08)}
+.tag-p{color:#BC8CFF;border-color:rgba(188,140,255,.3);background:rgba(188,140,255,.08)}
+.tag-g{color:var(--green);border-color:rgba(0,255,65,.3);background:rgba(0,255,65,.05)}
+
+/* FINDINGS */
+.findings-bg{background:var(--dark2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.findings-list{display:flex;flex-direction:column;gap:2px;max-width:1100px}
+.finding{
+  display:grid;
+  grid-template-columns:100px 1fr auto;
+  gap:1.5rem;
+  align-items:center;
+  background:var(--dark);
+  border:1px solid var(--border);
+  padding:16px 20px;
+  transition:border-color .2s,transform .2s;
+}
+.finding:hover{border-color:var(--dim);transform:translateX(4px)}
+.sev{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.65rem;font-weight:700;
+  padding:4px 8px;text-align:center;
+  letter-spacing:.08em;
+}
+.sev-c{background:rgba(183,28,28,.2);color:#FF5449;border:1px solid rgba(183,28,28,.3)}
+.sev-h{background:rgba(255,68,0,.15);color:var(--red2);border:1px solid rgba(255,68,0,.25)}
+.sev-m{background:rgba(255,184,0,.1);color:var(--amber);border:1px solid rgba(255,184,0,.2)}
+.finding-title{font-size:.9rem;font-weight:500}
+.finding-cat{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.62rem;color:var(--muted);margin-top:3px;
+}
+.finding-mod{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.62rem;color:var(--dim);
+  white-space:nowrap;
+}
+
+/* CTA */
+.cta-section{
+  text-align:center;
+  padding:120px 5vw;
+  position:relative;
+  overflow:hidden;
+}
+.cta-glow{
+  position:absolute;
+  bottom:-200px;left:50%;transform:translateX(-50%);
+  width:600px;height:600px;
+  background:radial-gradient(circle,rgba(255,34,0,.08) 0%,transparent 60%);
+  pointer-events:none;
+}
+.cta-inner{position:relative;z-index:1;max-width:700px;margin:0 auto}
+.cta-pre{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--red);margin-bottom:1.5rem;
+}
+.cta h2{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(3rem,7vw,6rem);
+  letter-spacing:.02em;line-height:.95;
+  margin-bottom:1.5rem;
+}
+.cta p{color:var(--muted);font-size:1rem;line-height:1.8;margin-bottom:3rem}
+.cta-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+
+/* FOOTER */
+footer{
+  border-top:1px solid var(--border);
+  padding:32px 5vw;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+.foot-left{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.7rem;color:var(--dim);
+}
+.foot-right{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.7rem;
+  display:flex;gap:2rem;
+}
+.foot-right a{color:var(--muted);text-decoration:none;transition:color .2s}
+.foot-right a:hover{color:var(--text)}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .6s ease forwards;opacity:0}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}.d4{animation-delay:.4s}.d5{animation-delay:.5s}
+
+/* SCROLL REVEAL */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr}
+  .terminal-wrap{display:none}
+}
+@media(max-width:600px){
+  .nav-right .nav-link{display:none}
+  .finding{grid-template-columns:80px 1fr}
+  .finding-mod{display:none}
+}
 </style>
 </head>
 <body>
 
-<!-- NAV -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
 <nav>
   <a href="#" class="nav-logo">
-    <div class="logo-mark"></div>
+    <div class="logo-hex"></div>
     XIPE
   </a>
-  <ul class="nav-links">
-    <li><a href="#modules">Módulos</a></li>
-    <li><a href="#como">Cómo funciona</a></li>
-    <li><a href="#hallazgos">Hallazgos</a></li>
-    <li><a href="#contacto" class="nav-cta">Solicitar Pentest</a></li>
-  </ul>
+  <div class="nav-right">
+    <a href="#modules" class="nav-link">Módulos</a>
+    <a href="#hallazgos" class="nav-link">Hallazgos</a>
+    <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank" class="nav-link">GitHub</a>
+    <a href="#contacto" class="nav-cta"><span>Solicitar Demo</span></a>
+  </div>
 </nav>
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-grid"></div>
+  <div class="hero-grid-bg"></div>
   <div class="hero-glow"></div>
 
   <div class="hero-content">
-    <div class="hero-badge fade-up">XIPE v1.0 — by Inbest Cybersecurity</div>
-
-    <h1 class="fade-up delay-1">
-      Donde la<br>
-      <span class="highlight">navaja</span><br>
-      toca el modelo.
+    <div class="hero-tag fade-up">XIPE v2.1 — by Inbest Cybersecurity</div>
+    <h1 class="fade-up d1">
+      <span class="line1">WHERE THE</span>
+      <span class="line2">BLADE</span>
+      <span class="line3">MEETS THE MODEL</span>
     </h1>
-
-    <p class="hero-sub fade-up delay-2">
-      Framework ofensivo de AI pentesting. Evaluamos tus plataformas de IA contra el
-      OWASP LLM Top 10 — RAG, chatbots, agentes y APIs — en minutos, no semanas.
+    <p class="hero-sub fade-up d2">
+      Framework ofensivo de AI pentesting. Evalúa plataformas de IA contra el OWASP LLM Top 10 —
+      RAG, chatbots, APIs y agentes autónomos — en segundos.
     </p>
-
-    <div class="hero-actions fade-up delay-3">
+    <div class="hero-actions fade-up d3">
       <a href="#contacto" class="btn-primary">Solicitar evaluación →</a>
-      <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank" class="btn-secondary">Ver en GitHub</a>
+      <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank" class="btn-ghost">Ver código</a>
     </div>
   </div>
 
-  <!-- TERMINAL -->
-  <div class="terminal-wrap fade-up delay-4">
+  <div class="terminal-wrap fade-up d4">
     <div class="terminal">
-      <div class="terminal-bar">
-        <div class="dot dot-red"></div>
-        <div class="dot dot-yellow"></div>
-        <div class="dot dot-green"></div>
-        <span class="terminal-title">xipe — python main.py --config engagement.yaml</span>
+      <div class="term-bar">
+        <div class="dot d-r"></div><div class="dot d-y"></div><div class="dot d-g"></div>
+        <span class="term-title">xipe — ENG-AUTO-2026</span>
       </div>
-      <div class="terminal-body">
-        <div class="t-muted">▶ Iniciando módulo: <span class="t-blue">API Security Tester</span></div>
-        <div><span class="t-red">🚨 [CRITICAL]</span> <span class="t-muted">Sin autenticación: /api/v1/documents</span></div>
-        <div><span class="t-red">🚨 [CRITICAL]</span> <span class="t-muted">Sin autenticación: /api/v1/assistants</span></div>
-        <div class="t-green">✓ API Security — 14 hallazgo(s)</div>
-        <br>
-        <div class="t-muted">▶ Iniciando módulo: <span class="t-blue">Prompt Injection</span></div>
-        <div><span class="t-red">🚨 [HIGH]</span> <span class="t-muted">Direct Injection: ignore_instructions</span></div>
-        <div><span class="t-red">🚨 [CRITICAL]</span> <span class="t-muted">System Prompt expuesto al usuario</span></div>
-        <div class="t-green">✓ Prompt Injection — 7 hallazgo(s)</div>
-        <br>
-        <div class="t-muted">▶ Iniciando módulo: <span class="t-blue">RAG Security Tester</span></div>
-        <div><span class="t-red">🚨 [CRITICAL]</span> <span class="t-muted">RAG expone CREDENTIALS en respuestas</span></div>
-        <div><span class="t-yellow">🚨 [HIGH]</span> <span class="t-muted">Cross-tenant data leakage detectado</span></div>
-        <div class="t-green">✓ RAG Security — 9 hallazgo(s)</div>
-        <br>
-        <div style="border-top: 1px solid #21262D; padding-top: 12px; margin-top: 4px;">
-          <span class="t-accent">TOTAL: 29 hallazgos únicos</span>
-          <span class="t-dim"> · CRITICAL: 7 · HIGH: 11</span>
-        </div>
-        <div class="t-dim">✓ PDF generado: reporte_engagement.pdf · 26s</div>
+      <div class="term-body" id="terminal-output">
+        <div><span class="t-prompt">xipe@inbest</span><span class="t-dim">:</span><span class="t-blue">~</span><span class="t-dim">$</span> <span class="t-cmd" id="typed-cmd"></span></div>
+        <div id="term-lines"></div>
+        <div id="term-cursor" style="display:none"><span class="cursor-blink"></span></div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- STATS -->
-<div class="stats">
-  <div class="stats-grid">
-    <div class="stat-item">
-      <div class="stat-number" style="color: var(--accent);">29</div>
-      <div class="stat-label">Hallazgos en promedio</div>
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat-item reveal">
+      <span class="stat-num" style="color:var(--red)" id="count-vuln">0</span>
+      <span class="stat-label">Vulnerabilidades encontradas</span>
     </div>
-    <div class="stat-item">
-      <div class="stat-number" style="color: var(--blue);">26s</div>
-      <div class="stat-label">Tiempo de ejecución</div>
+    <div class="stat-item reveal">
+      <span class="stat-num" style="color:#79C0FF" id="count-secs">0</span>
+      <span class="stat-label">Segundos por scan</span>
     </div>
-    <div class="stat-item">
-      <div class="stat-number" style="color: var(--green);">10</div>
-      <div class="stat-label">Categorías OWASP cubiertas</div>
+    <div class="stat-item reveal">
+      <span class="stat-num" style="color:var(--green)" id="count-owasp">0</span>
+      <span class="stat-label">Categorías OWASP cubiertas</span>
     </div>
-    <div class="stat-item">
-      <div class="stat-number" style="color: var(--yellow);">4</div>
-      <div class="stat-label">Módulos de ataque</div>
+    <div class="stat-item reveal">
+      <span class="stat-num" style="color:var(--amber)" id="count-mods">0</span>
+      <span class="stat-label">Módulos de ataque</span>
     </div>
-    <div class="stat-item">
-      <div class="stat-number" style="color: var(--purple);">100%</div>
-      <div class="stat-label">Reporte PDF automatizado</div>
+    <div class="stat-item reveal">
+      <span class="stat-num" style="color:#BC8CFF" id="count-pdf">0</span>
+      <span class="stat-label">% Reporte automatizado</span>
     </div>
   </div>
 </div>
 
 <!-- MÓDULOS -->
 <section id="modules">
-  <div class="section-tag">Cobertura</div>
-  <h2 class="section-title">OWASP LLM Top 10 — cubierto.</h2>
-  <p class="section-sub">Cuatro módulos especializados que atacan sistemáticamente cada vector de riesgo en plataformas de IA modernas.</p>
+  <div class="section-tag reveal">Cobertura</div>
+  <h2 class="section-title reveal">OWASP LLM Top 10<br>— cubierto.</h2>
+  <p class="section-sub reveal">Cuatro módulos que atacan cada vector de riesgo en plataformas de IA modernas.</p>
 
-  <div class="modules-grid">
+  <div class="modules-grid reveal">
     <div class="module-card">
-      <div class="module-icon">💉</div>
+      <div class="module-num">01 / MÓDULO</div>
       <div class="module-name">Prompt Injection</div>
-      <div class="module-desc">Direct e indirect injection, system prompt leakage, role override, token injection y excessive agency.</div>
-      <div class="module-tags">
-        <span class="tag tag-red">LLM01</span>
-        <span class="tag tag-orange">LLM07</span>
-        <span class="tag tag-purple">LLM06</span>
+      <div class="module-desc">Direct e indirect injection, system prompt leakage, role override, token injection y excessive agency sobre plataformas LLM.</div>
+      <div class="tags">
+        <span class="tag tag-r">LLM01</span>
+        <span class="tag tag-o">LLM07</span>
+        <span class="tag tag-p">LLM06</span>
       </div>
     </div>
-
     <div class="module-card">
-      <div class="module-icon">🗄️</div>
+      <div class="module-num">02 / MÓDULO</div>
       <div class="module-name">RAG Security</div>
-      <div class="module-desc">Enumeración de documentos, cross-tenant data leakage, extracción de credenciales y data poisoning indirecto.</div>
-      <div class="module-tags">
-        <span class="tag tag-blue">LLM08</span>
-        <span class="tag tag-red">LLM02</span>
-        <span class="tag tag-yellow">LLM04</span>
+      <div class="module-desc">Enumeración de documentos, cross-tenant data leakage, extracción de credenciales, data poisoning indirecto.</div>
+      <div class="tags">
+        <span class="tag tag-b">LLM08</span>
+        <span class="tag tag-r">LLM02</span>
+        <span class="tag tag-o">LLM04</span>
       </div>
     </div>
-
     <div class="module-card">
-      <div class="module-icon">🔌</div>
+      <div class="module-num">03 / MÓDULO</div>
       <div class="module-name">API Security</div>
-      <div class="module-desc">Auth bypass, IDOR secuencial, security headers, rate limiting, HTTP methods y information disclosure.</div>
-      <div class="module-tags">
-        <span class="tag tag-orange">AUTH</span>
-        <span class="tag tag-red">IDOR</span>
-        <span class="tag tag-yellow">LLM10</span>
+      <div class="module-desc">Auth bypass, IDOR secuencial, security headers, rate limiting, HTTP methods, information disclosure.</div>
+      <div class="tags">
+        <span class="tag tag-o">AUTH</span>
+        <span class="tag tag-r">IDOR</span>
+        <span class="tag tag-b">LLM10</span>
       </div>
     </div>
-
     <div class="module-card">
-      <div class="module-icon">🤖</div>
+      <div class="module-num">04 / MÓDULO</div>
       <div class="module-name">Agent Testing</div>
       <div class="module-desc">Tool abuse, workflow bypass, approval bypass, improper output handling (XSS, SQLi), agent enumeration.</div>
-      <div class="module-tags">
-        <span class="tag tag-purple">LLM06</span>
-        <span class="tag tag-blue">LLM05</span>
-        <span class="tag tag-green">LLM01</span>
+      <div class="tags">
+        <span class="tag tag-p">LLM06</span>
+        <span class="tag tag-b">LLM05</span>
+        <span class="tag tag-g">LLM01</span>
       </div>
     </div>
   </div>
 </section>
 
-<!-- CÓMO FUNCIONA -->
-<section id="como" class="how-bg">
-  <div class="section-tag">Proceso</div>
-  <h2 class="section-title">De cero a reporte en horas.</h2>
-  <p class="section-sub">Sin instalaciones complejas. Sin acceso a código fuente. Solo las credenciales de prueba del cliente y XIPE hace el resto.</p>
+<!-- HALLAZGOS -->
+<section id="hallazgos" class="findings-bg">
+  <div class="section-tag reveal">Resultados reales</div>
+  <h2 class="section-title reveal">Lo que encontramos<br>en producción.</h2>
+  <p class="section-sub reveal">Hallazgos de un engagement reciente. Todos documentados con evidencia y reproducibles.</p>
 
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">01</div>
-      <div class="step-title">Contrato y alcance</div>
-      <div class="step-desc">Firmamos el engagement con el cliente. Definimos URLs, fechas y módulos a ejecutar. El cliente nos entrega credenciales de prueba.</div>
-    </div>
-    <div class="step">
-      <div class="step-num">02</div>
-      <div class="step-title">Ejecución automatizada</div>
-      <div class="step-desc">XIPE corre contra el entorno autorizado del cliente. Cada módulo ejecuta baterías de payloads especializados y registra evidencia.</div>
-    </div>
-    <div class="step">
-      <div class="step-num">03</div>
-      <div class="step-title">Reporte + remediación</div>
-      <div class="step-desc">Entregamos un PDF ejecutivo con hallazgos clasificados por severidad OWASP, evidencia completa y recomendaciones técnicas accionables.</div>
-    </div>
-  </div>
-</section>
-
-<!-- HALLAZGOS SAMPLE -->
-<section id="hallazgos">
-  <div class="section-tag">Resultados reales</div>
-  <h2 class="section-title">Lo que encontramos en producción.</h2>
-  <p class="section-sub">Hallazgos de un engagement reciente contra una plataforma de IA empresarial. Todos documentados con evidencia y reproduc­ibles.</p>
-
-  <div class="findings-sample">
-    <div class="finding-row">
-      <span class="sev-badge sev-critical">CRITICAL</span>
+  <div class="findings-list reveal">
+    <div class="finding">
+      <span class="sev sev-c">CRITICAL</span>
       <div>
-        <div class="finding-title">System Prompt expuesto — API key y contraseñas en texto claro</div>
+        <div class="finding-title">System Prompt expuesto — API key y credenciales en texto claro</div>
         <div class="finding-cat">LLM07 — System Prompt Leakage</div>
       </div>
-      <div class="finding-module">prompt_injection</div>
+      <div class="finding-mod">prompt_injection</div>
     </div>
-
-    <div class="finding-row">
-      <span class="sev-badge sev-critical">CRITICAL</span>
+    <div class="finding">
+      <span class="sev sev-c">CRITICAL</span>
       <div>
         <div class="finding-title">3 endpoints sin autenticación — documentos, assistants, workspaces</div>
         <div class="finding-cat">AUTH — Authentication / Authorization Bypass</div>
       </div>
-      <div class="finding-module">api_tester</div>
+      <div class="finding-mod">api_tester</div>
     </div>
-
-    <div class="finding-row">
-      <span class="sev-badge sev-critical">CRITICAL</span>
+    <div class="finding">
+      <span class="sev sev-c">CRITICAL</span>
       <div>
         <div class="finding-title">RAG expone credenciales VPN y salarios en respuestas</div>
         <div class="finding-cat">LLM02 — Sensitive Information Disclosure</div>
       </div>
-      <div class="finding-module">rag_tester</div>
+      <div class="finding-mod">rag_tester</div>
     </div>
-
-    <div class="finding-row">
-      <span class="sev-badge sev-high">HIGH</span>
+    <div class="finding">
+      <span class="sev sev-h">HIGH</span>
       <div>
         <div class="finding-title">Direct Prompt Injection exitoso — 4 vectores diferentes</div>
         <div class="finding-cat">LLM01 — Prompt Injection</div>
       </div>
-      <div class="finding-module">prompt_injection</div>
+      <div class="finding-mod">prompt_injection</div>
     </div>
-
-    <div class="finding-row">
-      <span class="sev-badge sev-high">HIGH</span>
+    <div class="finding">
+      <span class="sev sev-h">HIGH</span>
       <div>
-        <div class="finding-title">IDOR en documentos — IDs secuenciales sin validación de ownership</div>
-        <div class="finding-cat">IDOR — Insecure Direct Object Reference</div>
+        <div class="finding-title">/swagger.json y /openapi.json accesibles sin autenticación</div>
+        <div class="finding-cat">DATA — Unintended Data Exposure</div>
       </div>
-      <div class="finding-module">api_tester</div>
+      <div class="finding-mod">web_recon</div>
     </div>
-
-    <div class="finding-row">
-      <span class="sev-badge sev-medium">MEDIUM</span>
+    <div class="finding">
+      <span class="sev sev-m">MEDIUM</span>
       <div>
         <div class="finding-title">Sin rate limiting en endpoint de chat — DoS y abuso de recursos</div>
         <div class="finding-cat">LLM10 — Unbounded Consumption</div>
       </div>
-      <div class="finding-module">api_tester</div>
+      <div class="finding-mod">api_tester</div>
     </div>
   </div>
 </section>
 
 <!-- CTA -->
 <section id="contacto" class="cta-section">
-  <div class="cta-box">
-    <div class="section-tag" style="text-align:center;">¿Listo?</div>
-    <h2>Encuentra tus vulnerabilidades antes que otros.</h2>
-    <p>Cada plataforma de IA que no ha sido evaluada es un riesgo activo. XIPE lo descubre en minutos y te da el reporte para arreglarlo.</p>
-    <div class="cta-actions">
+  <div class="cta-glow"></div>
+  <div class="cta-inner">
+    <div class="cta-pre reveal">¿Listo para saber la verdad?</div>
+    <h2 class="reveal">ENCUENTRA TUS<br><span style="color:var(--red)">VULNERABILIDADES</span><br>PRIMERO.</h2>
+    <p class="reveal">Cada plataforma de IA sin evaluar es un riesgo activo. XIPE lo descubre en minutos y te da el reporte para arreglarlo.</p>
+    <div class="cta-btns reveal">
       <a href="mailto:security@inbest.cloud?subject=Solicitud%20AI%20Pentest%20%E2%80%94%20XIPE" class="btn-primary">Solicitar evaluación →</a>
-      <a href="https://inbest.cloud" target="_blank" class="btn-secondary">Conocer Inbest</a>
+      <a href="https://inbest.cloud" target="_blank" class="btn-ghost">Conocer Inbest</a>
     </div>
   </div>
 </section>
 
-<!-- FOOTER -->
 <footer>
-  <div class="footer-left">XIPE by Inbest Cybersecurity — Guadalajara, México</div>
-  <div class="footer-right">
+  <div class="foot-left">XIPE by Inbest Cybersecurity — Guadalajara, México — © 2026</div>
+  <div class="foot-right">
     <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank">GitHub</a>
-    &nbsp;·&nbsp;
     <a href="mailto:security@inbest.cloud">security@inbest.cloud</a>
-    &nbsp;·&nbsp;
-    <span>Uso exclusivo en engagements autorizados</span>
+    <a href="#">LEGAL.md</a>
   </div>
 </footer>
 
+<script>
+// CURSOR
+const cursor = document.getElementById('cursor')
+const ring = document.getElementById('cursorRing')
+let mx=0,my=0,rx=0,ry=0
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.left=mx+'px';cursor.style.top=my+'px'})
+setInterval(()=>{rx+=(mx-rx)*.15;ry+=(my-ry)*.15;ring.style.left=rx+'px';ring.style.top=ry+'px'},16)
+
+// TERMINAL ANIMATION
+const lines = [
+  {delay:800, text:'python main.py --config engagement.yaml --dashboard', type:'cmd'},
+  {delay:1600, text:'', type:'gap'},
+  {delay:1700, text:'── XIPE AI Security Scanner v2.1 ──', type:'muted'},
+  {delay:2200, text:'✓ Autorización validada', type:'green'},
+  {delay:2600, text:'✓ Conectividad OK — https://target.com → 200', type:'green'},
+  {delay:3000, text:'', type:'gap'},
+  {delay:3100, text:'▶ Web Recon & AI Discovery', type:'blue'},
+  {delay:3500, text:'  Tech stack: Cloudflare, Express, Node.js', type:'muted'},
+  {delay:3900, text:'  Subdomain activo: api.target.com', type:'amber'},
+  {delay:4300, text:'  Endpoints AI encontrados: 7', type:'amber'},
+  {delay:4700, text:'', type:'gap'},
+  {delay:4800, text:'▶ API Security Tester', type:'blue'},
+  {delay:5200, text:'🚨 [CRITICAL] Sin auth: /api/v1/documents', type:'critical'},
+  {delay:5500, text:'🚨 [CRITICAL] Sin auth: /api/v1/assistants', type:'critical'},
+  {delay:5800, text:'🚨 [HIGH]     IDOR en documents: ID 1', type:'red'},
+  {delay:6100, text:'', type:'gap'},
+  {delay:6200, text:'▶ Prompt Injection & System Prompt Leakage', type:'blue'},
+  {delay:6600, text:'🚨 [HIGH]     Direct Injection: ignore_instructions', type:'red'},
+  {delay:6900, text:'🚨 [CRITICAL] System Prompt expuesto al usuario', type:'critical'},
+  {delay:7200, text:'', type:'gap'},
+  {delay:7300, text:'▶ RAG Security Tester', type:'blue'},
+  {delay:7700, text:'🚨 [CRITICAL] RAG expone CREDENTIALS en respuestas', type:'critical'},
+  {delay:8000, text:'🚨 [HIGH]     Indirect Injection via RAG detectado', type:'red'},
+  {delay:8300, text:'', type:'gap'},
+  {delay:8400, text:'── RESUMEN ─────────────────────────────', type:'muted'},
+  {delay:8700, text:'  Total hallazgos únicos: 36', type:'text'},
+  {delay:8900, text:'  CRITICAL: 7  HIGH: 11  MEDIUM: 8  LOW: 3', type:'text'},
+  {delay:9100, text:'✓ PDF generado: reporte_engagement.pdf', type:'green'},
+  {delay:9300, text:'✓ Notificación enviada a Teams ✓', type:'green'},
+  {delay:9500, text:'  Duración: 0m 42s', type:'muted'},
+]
+
+const termLines = document.getElementById('term-lines')
+const termCursor = document.getElementById('term-cursor')
+const typedCmd = document.getElementById('typed-cmd')
+
+// Type the command
+const cmdText = 'xipe scan https://target-cliente.com'
+let ci = 0
+const typeCmd = setInterval(()=>{
+  if(ci < cmdText.length){
+    typedCmd.textContent += cmdText[ci]
+    ci++
+  } else {
+    clearInterval(typeCmd)
+    termCursor.style.display='block'
+    showLines()
+  }
+},50)
+
+function showLines(){
+  lines.forEach(line=>{
+    setTimeout(()=>{
+      const div = document.createElement('div')
+      if(line.type==='gap'){div.innerHTML='&nbsp;'}
+      else if(line.type==='cmd'){div.innerHTML=`<span class="t-prompt">xipe@inbest</span><span class="t-dim">:~$</span> <span class="t-cmd">${line.text}</span>`}
+      else if(line.type==='muted'){div.innerHTML=`<span class="t-muted">${line.text}</span>`}
+      else if(line.type==='green'){div.innerHTML=`<span class="t-green">${line.text}</span>`}
+      else if(line.type==='blue'){div.innerHTML=`<span class="t-blue">${line.text}</span>`}
+      else if(line.type==='amber'){div.innerHTML=`<span class="t-amber">${line.text}</span>`}
+      else if(line.type==='red'){div.innerHTML=`<span class="t-red">${line.text}</span>`}
+      else if(line.type==='critical'){div.innerHTML=`<span class="t-critical">${line.text}</span>`}
+      else{div.innerHTML=`<span class="t-cmd">${line.text}</span>`}
+      termLines.appendChild(div)
+      termLines.scrollTop = termLines.scrollHeight
+    }, line.delay)
+  })
+  // Loop after finish
+  setTimeout(()=>{
+    termLines.innerHTML=''
+    typedCmd.textContent=''
+    ci=0
+    const typeCmd2 = setInterval(()=>{
+      if(ci < cmdText.length){typedCmd.textContent += cmdText[ci];ci++}
+      else{clearInterval(typeCmd2);showLines()}
+    },50)
+  }, 14000)
+}
+
+// COUNTERS
+function animateCounter(id, target, duration, suffix=''){
+  const el = document.getElementById(id)
+  const start = Date.now()
+  const timer = setInterval(()=>{
+    const progress = Math.min((Date.now()-start)/duration, 1)
+    const ease = 1-Math.pow(1-progress,3)
+    el.textContent = Math.round(ease*target) + suffix
+    if(progress===1) clearInterval(timer)
+  },16)
+}
+
+// SCROLL REVEAL
+const reveals = document.querySelectorAll('.reveal')
+const observer = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('visible')
+      // Trigger counters when stats visible
+      if(e.target.closest('.stats-inner')){
+        setTimeout(()=>{
+          animateCounter('count-vuln', 36, 1800)
+          animateCounter('count-secs', 42, 1500)
+          animateCounter('count-owasp', 10, 1200)
+          animateCounter('count-mods', 5, 900)
+          animateCounter('count-pdf', 100, 2000, '%')
+        }, 200)
+      }
+    }
+  })
+},{threshold:0.15})
+reveals.forEach(r=>observer.observe(r))
+</script>
 </body>
 </html>
