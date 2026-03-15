@@ -28,6 +28,12 @@ def handler(event, context):
       - Invocación manual:    { "engagement_id": "ENG-2025-001", "config_ssm_path": "/xipe/..." }
     """
     print(f"XIPE Lambda triggered — {datetime.utcnow().isoformat()}")
+    # Lambda Function URL wraps body in event['body']
+    if 'body' in event:
+        try:
+            event = json.loads(event['body'])
+        except Exception:
+            pass
     print(f"Event: {json.dumps(event)}")
 
     # Obtener configuración de SSM Parameter Store
