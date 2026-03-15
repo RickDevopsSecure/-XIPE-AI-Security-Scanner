@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XIPE — AI Security Scanner | Inbest Cybersecurity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #070A0F;
+    --bg2:       #0D1117;
+    --bg3:       #161B22;
+    --border:    #21262D;
+    --border2:   #30363D;
+    --text:      #E6EDF3;
+    --muted:     #8B949E;
+    --dim:       #484F58;
+    --accent:    #FF4500;
+    --accent2:   #FF6B35;
+    --blue:      #58A6FF;
+    --green:     #3FB950;
+    --yellow:    #F0883E;
+    --red:       #FF5449;
+    --purple:    #BC8CFF;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE TEXTURE ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 5vw;
+    height: 64px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(7, 10, 15, 0.85);
+    backdrop-filter: blur(12px);
+  }
+
+  .nav-logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nav-logo .logo-mark {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--text); }
+
+  .nav-cta {
+    background: var(--accent);
+    color: white !important;
+    padding: 8px 20px;
+    border-radius: 4px;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em;
+    transition: background 0.2s, transform 0.1s !important;
+  }
+
+  .nav-cta:hover {
+    background: var(--accent2) !important;
+    color: white !important;
+    transform: translateY(-1px);
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 120px 5vw 80px;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,69,0,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,69,0,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .hero-glow {
+    position: absolute;
+    top: -200px;
+    right: -200px;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle, rgba(255,69,0,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 680px;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,69,0,0.1);
+    border: 1px solid rgba(255,69,0,0.3);
+    color: var(--accent2);
+    padding: 6px 14px;
+    border-radius: 2px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: blink 1.5s infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .hero h1 {
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero h1 .highlight {
+    color: var(--accent);
+    position: relative;
+    display: inline-block;
+  }
+
+  .hero h1 .highlight::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+    opacity: 0.4;
+  }
+
+  .hero-sub {
+    font-size: 1.15rem;
+    color: var(--muted);
+    max-width: 520px;
+    margin-bottom: 2.5rem;
+    font-weight: 400;
+    line-height: 1.7;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    padding: 14px 28px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary:hover {
+    background: var(--accent2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(255,69,0,0.3);
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--text);
+    padding: 14px 28px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--muted);
+    background: var(--bg3);
+  }
+
+  /* ── TERMINAL ── */
+  .terminal-wrap {
+    position: absolute;
+    right: 5vw;
+    top: 50%;
+    transform: translateY(-50%);
+    width: min(520px, 45vw);
+    z-index: 1;
+  }
+
+  .terminal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+  }
+
+  .terminal-bar {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-red { background: #FF5F57; }
+  .dot-yellow { background: #FFBD2E; }
+  .dot-green { background: #28CA41; }
+
+  .terminal-title {
+    margin-left: 8px;
+    color: var(--muted);
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+  }
+
+  .terminal-body { padding: 16px; line-height: 1.9; }
+
+  .t-dim    { color: var(--dim); }
+  .t-muted  { color: var(--muted); }
+  .t-green  { color: var(--green); }
+  .t-red    { color: var(--red); }
+  .t-yellow { color: var(--yellow); }
+  .t-blue   { color: var(--blue); }
+  .t-accent { color: var(--accent); font-weight: 700; }
+  .t-purple { color: var(--purple); }
+
+  /* ── STATS ── */
+  .stats {
+    padding: 60px 5vw;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 40px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .stat-item { text-align: center; }
+
+  .stat-number {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+  }
+
+  /* ── SECTIONS ── */
+  section { padding: 100px 5vw; position: relative; }
+
+  .section-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+    max-width: 600px;
+  }
+
+  .section-sub {
+    font-size: 1rem;
+    color: var(--muted);
+    max-width: 540px;
+    line-height: 1.8;
+    margin-bottom: 3rem;
+  }
+
+  /* ── MODULES GRID ── */
+  .modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 1100px;
+  }
+
+  .module-card {
+    background: var(--bg2);
+    padding: 2rem;
+    transition: background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .module-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .module-card:hover { background: var(--bg3); }
+  .module-card:hover::before { opacity: 1; }
+
+  .module-icon {
+    width: 40px; height: 40px;
+    background: rgba(255,69,0,0.1);
+    border: 1px solid rgba(255,69,0,0.2);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+  }
+
+  .module-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .module-desc {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  .module-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    border-radius: 2px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  .tag-red    { background: rgba(255,84,73,0.15);  color: #FF5449; }
+  .tag-orange { background: rgba(255,69,0,0.15);   color: var(--accent2); }
+  .tag-blue   { background: rgba(88,166,255,0.15); color: var(--blue); }
+  .tag-purple { background: rgba(188,140,255,0.15);color: var(--purple); }
+  .tag-green  { background: rgba(63,185,80,0.15);  color: var(--green); }
+  .tag-yellow { background: rgba(240,136,62,0.15); color: var(--yellow); }
+
+  /* ── HOW IT WORKS ── */
+  .how-bg { background: var(--bg2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 2px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 1100px;
+  }
+
+  .step {
+    background: var(--bg2);
+    padding: 2.5rem 2rem;
+    position: relative;
+  }
+
+  .step-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--border2);
+    line-height: 1;
+    margin-bottom: 1.5rem;
+  }
+
+  .step-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+
+  .step-desc {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* ── FINDINGS SAMPLE ── */
+  .findings-sample {
+    max-width: 1100px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .finding-row {
+    display: grid;
+    grid-template-columns: 120px 1fr auto;
+    align-items: center;
+    gap: 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    transition: border-color 0.2s;
+  }
+
+  .finding-row:hover { border-color: var(--border2); }
+
+  .sev-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 3px;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+
+  .sev-critical { background: rgba(183,28,28,0.2); color: #FF5449; border: 1px solid rgba(183,28,28,0.3); }
+  .sev-high     { background: rgba(229,57,53,0.15); color: #FF7B72; border: 1px solid rgba(229,57,53,0.25); }
+  .sev-medium   { background: rgba(245,124,0,0.15); color: #F0883E; border: 1px solid rgba(245,124,0,0.25); }
+
+  .finding-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .finding-cat {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .finding-module {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--dim);
+    white-space: nowrap;
+  }
+
+  /* ── CTA ── */
+  .cta-section {
+    text-align: center;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+  }
+
+  .cta-box {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .cta-box h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+  }
+
+  .cta-box p {
+    color: var(--muted);
+    margin-bottom: 2.5rem;
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .cta-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 5vw;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .footer-left {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--dim);
+  }
+
+  .footer-right {
+    font-size: 0.8rem;
+    color: var(--dim);
+  }
+
+  .footer-right a {
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-right a:hover { color: var(--text); }
+
+  /* ── DIVIDER ── */
+  .divider {
+    width: 48px;
+    height: 2px;
+    background: var(--accent);
+    margin: 1.5rem 0;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .fade-up {
+    animation: fadeUp 0.6s ease forwards;
+    opacity: 0;
+  }
+
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; }
+  .delay-4 { animation-delay: 0.4s; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .terminal-wrap { display: none; }
+    .hero-content { max-width: 100%; }
+  }
+
+  @media (max-width: 600px) {
+    .nav-links { display: none; }
+    .finding-row { grid-template-columns: 90px 1fr; }
+    .finding-module { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="logo-mark"></div>
+    XIPE
+  </a>
+  <ul class="nav-links">
+    <li><a href="#modules">Módulos</a></li>
+    <li><a href="#como">Cómo funciona</a></li>
+    <li><a href="#hallazgos">Hallazgos</a></li>
+    <li><a href="#contacto" class="nav-cta">Solicitar Pentest</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+
+  <div class="hero-content">
+    <div class="hero-badge fade-up">XIPE v1.0 — by Inbest Cybersecurity</div>
+
+    <h1 class="fade-up delay-1">
+      Donde la<br>
+      <span class="highlight">navaja</span><br>
+      toca el modelo.
+    </h1>
+
+    <p class="hero-sub fade-up delay-2">
+      Framework ofensivo de AI pentesting. Evaluamos tus plataformas de IA contra el
+      OWASP LLM Top 10 — RAG, chatbots, agentes y APIs — en minutos, no semanas.
+    </p>
+
+    <div class="hero-actions fade-up delay-3">
+      <a href="#contacto" class="btn-primary">Solicitar evaluación →</a>
+      <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank" class="btn-secondary">Ver en GitHub</a>
+    </div>
+  </div>
+
+  <!-- TERMINAL -->
+  <div class="terminal-wrap fade-up delay-4">
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-red"></div>
+        <div class="dot dot-yellow"></div>
+        <div class="dot dot-green"></div>
+        <span class="terminal-title">xipe — python main.py --config engagement.yaml</span>
+      </div>
+      <div class="terminal-body">
+        <div class="t-muted">▶ Iniciando módulo: <span class="t-blue">API Security Tester</span></div>
+        <div><span class="t-red">🚨 [CRITICAL]</span> <span class="t-muted">Sin autenticación: /api/v1/documents</span></div>
+        <div><span class="t-red">🚨 [CRITICAL]</span> <span class="t-muted">Sin autenticación: /api/v1/assistants</span></div>
+        <div class="t-green">✓ API Security — 14 hallazgo(s)</div>
+        <br>
+        <div class="t-muted">▶ Iniciando módulo: <span class="t-blue">Prompt Injection</span></div>
+        <div><span class="t-red">🚨 [HIGH]</span> <span class="t-muted">Direct Injection: ignore_instructions</span></div>
+        <div><span class="t-red">🚨 [CRITICAL]</span> <span class="t-muted">System Prompt expuesto al usuario</span></div>
+        <div class="t-green">✓ Prompt Injection — 7 hallazgo(s)</div>
+        <br>
+        <div class="t-muted">▶ Iniciando módulo: <span class="t-blue">RAG Security Tester</span></div>
+        <div><span class="t-red">🚨 [CRITICAL]</span> <span class="t-muted">RAG expone CREDENTIALS en respuestas</span></div>
+        <div><span class="t-yellow">🚨 [HIGH]</span> <span class="t-muted">Cross-tenant data leakage detectado</span></div>
+        <div class="t-green">✓ RAG Security — 9 hallazgo(s)</div>
+        <br>
+        <div style="border-top: 1px solid #21262D; padding-top: 12px; margin-top: 4px;">
+          <span class="t-accent">TOTAL: 29 hallazgos únicos</span>
+          <span class="t-dim"> · CRITICAL: 7 · HIGH: 11</span>
+        </div>
+        <div class="t-dim">✓ PDF generado: reporte_engagement.pdf · 26s</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stats-grid">
+    <div class="stat-item">
+      <div class="stat-number" style="color: var(--accent);">29</div>
+      <div class="stat-label">Hallazgos en promedio</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number" style="color: var(--blue);">26s</div>
+      <div class="stat-label">Tiempo de ejecución</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number" style="color: var(--green);">10</div>
+      <div class="stat-label">Categorías OWASP cubiertas</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number" style="color: var(--yellow);">4</div>
+      <div class="stat-label">Módulos de ataque</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number" style="color: var(--purple);">100%</div>
+      <div class="stat-label">Reporte PDF automatizado</div>
+    </div>
+  </div>
+</div>
+
+<!-- MÓDULOS -->
+<section id="modules">
+  <div class="section-tag">Cobertura</div>
+  <h2 class="section-title">OWASP LLM Top 10 — cubierto.</h2>
+  <p class="section-sub">Cuatro módulos especializados que atacan sistemáticamente cada vector de riesgo en plataformas de IA modernas.</p>
+
+  <div class="modules-grid">
+    <div class="module-card">
+      <div class="module-icon">💉</div>
+      <div class="module-name">Prompt Injection</div>
+      <div class="module-desc">Direct e indirect injection, system prompt leakage, role override, token injection y excessive agency.</div>
+      <div class="module-tags">
+        <span class="tag tag-red">LLM01</span>
+        <span class="tag tag-orange">LLM07</span>
+        <span class="tag tag-purple">LLM06</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="module-icon">🗄️</div>
+      <div class="module-name">RAG Security</div>
+      <div class="module-desc">Enumeración de documentos, cross-tenant data leakage, extracción de credenciales y data poisoning indirecto.</div>
+      <div class="module-tags">
+        <span class="tag tag-blue">LLM08</span>
+        <span class="tag tag-red">LLM02</span>
+        <span class="tag tag-yellow">LLM04</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="module-icon">🔌</div>
+      <div class="module-name">API Security</div>
+      <div class="module-desc">Auth bypass, IDOR secuencial, security headers, rate limiting, HTTP methods y information disclosure.</div>
+      <div class="module-tags">
+        <span class="tag tag-orange">AUTH</span>
+        <span class="tag tag-red">IDOR</span>
+        <span class="tag tag-yellow">LLM10</span>
+      </div>
+    </div>
+
+    <div class="module-card">
+      <div class="module-icon">🤖</div>
+      <div class="module-name">Agent Testing</div>
+      <div class="module-desc">Tool abuse, workflow bypass, approval bypass, improper output handling (XSS, SQLi), agent enumeration.</div>
+      <div class="module-tags">
+        <span class="tag tag-purple">LLM06</span>
+        <span class="tag tag-blue">LLM05</span>
+        <span class="tag tag-green">LLM01</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CÓMO FUNCIONA -->
+<section id="como" class="how-bg">
+  <div class="section-tag">Proceso</div>
+  <h2 class="section-title">De cero a reporte en horas.</h2>
+  <p class="section-sub">Sin instalaciones complejas. Sin acceso a código fuente. Solo las credenciales de prueba del cliente y XIPE hace el resto.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-title">Contrato y alcance</div>
+      <div class="step-desc">Firmamos el engagement con el cliente. Definimos URLs, fechas y módulos a ejecutar. El cliente nos entrega credenciales de prueba.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-title">Ejecución automatizada</div>
+      <div class="step-desc">XIPE corre contra el entorno autorizado del cliente. Cada módulo ejecuta baterías de payloads especializados y registra evidencia.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-title">Reporte + remediación</div>
+      <div class="step-desc">Entregamos un PDF ejecutivo con hallazgos clasificados por severidad OWASP, evidencia completa y recomendaciones técnicas accionables.</div>
+    </div>
+  </div>
+</section>
+
+<!-- HALLAZGOS SAMPLE -->
+<section id="hallazgos">
+  <div class="section-tag">Resultados reales</div>
+  <h2 class="section-title">Lo que encontramos en producción.</h2>
+  <p class="section-sub">Hallazgos de un engagement reciente contra una plataforma de IA empresarial. Todos documentados con evidencia y reproduc­ibles.</p>
+
+  <div class="findings-sample">
+    <div class="finding-row">
+      <span class="sev-badge sev-critical">CRITICAL</span>
+      <div>
+        <div class="finding-title">System Prompt expuesto — API key y contraseñas en texto claro</div>
+        <div class="finding-cat">LLM07 — System Prompt Leakage</div>
+      </div>
+      <div class="finding-module">prompt_injection</div>
+    </div>
+
+    <div class="finding-row">
+      <span class="sev-badge sev-critical">CRITICAL</span>
+      <div>
+        <div class="finding-title">3 endpoints sin autenticación — documentos, assistants, workspaces</div>
+        <div class="finding-cat">AUTH — Authentication / Authorization Bypass</div>
+      </div>
+      <div class="finding-module">api_tester</div>
+    </div>
+
+    <div class="finding-row">
+      <span class="sev-badge sev-critical">CRITICAL</span>
+      <div>
+        <div class="finding-title">RAG expone credenciales VPN y salarios en respuestas</div>
+        <div class="finding-cat">LLM02 — Sensitive Information Disclosure</div>
+      </div>
+      <div class="finding-module">rag_tester</div>
+    </div>
+
+    <div class="finding-row">
+      <span class="sev-badge sev-high">HIGH</span>
+      <div>
+        <div class="finding-title">Direct Prompt Injection exitoso — 4 vectores diferentes</div>
+        <div class="finding-cat">LLM01 — Prompt Injection</div>
+      </div>
+      <div class="finding-module">prompt_injection</div>
+    </div>
+
+    <div class="finding-row">
+      <span class="sev-badge sev-high">HIGH</span>
+      <div>
+        <div class="finding-title">IDOR en documentos — IDs secuenciales sin validación de ownership</div>
+        <div class="finding-cat">IDOR — Insecure Direct Object Reference</div>
+      </div>
+      <div class="finding-module">api_tester</div>
+    </div>
+
+    <div class="finding-row">
+      <span class="sev-badge sev-medium">MEDIUM</span>
+      <div>
+        <div class="finding-title">Sin rate limiting en endpoint de chat — DoS y abuso de recursos</div>
+        <div class="finding-cat">LLM10 — Unbounded Consumption</div>
+      </div>
+      <div class="finding-module">api_tester</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="contacto" class="cta-section">
+  <div class="cta-box">
+    <div class="section-tag" style="text-align:center;">¿Listo?</div>
+    <h2>Encuentra tus vulnerabilidades antes que otros.</h2>
+    <p>Cada plataforma de IA que no ha sido evaluada es un riesgo activo. XIPE lo descubre en minutos y te da el reporte para arreglarlo.</p>
+    <div class="cta-actions">
+      <a href="mailto:security@inbest.cloud?subject=Solicitud%20AI%20Pentest%20%E2%80%94%20XIPE" class="btn-primary">Solicitar evaluación →</a>
+      <a href="https://inbest.cloud" target="_blank" class="btn-secondary">Conocer Inbest</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">XIPE by Inbest Cybersecurity — Guadalajara, México</div>
+  <div class="footer-right">
+    <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank">GitHub</a>
+    &nbsp;·&nbsp;
+    <a href="mailto:security@inbest.cloud">security@inbest.cloud</a>
+    &nbsp;·&nbsp;
+    <span>Uso exclusivo en engagements autorizados</span>
+  </div>
+</footer>
+
+</body>
+</html>
