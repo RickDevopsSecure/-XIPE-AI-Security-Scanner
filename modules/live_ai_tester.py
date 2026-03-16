@@ -1,17 +1,17 @@
 """
-XIPE — Live AI Interaction Module v2.0 — Powered by Claude
-Usa Claude para generar ataques personalizados y analizar respuestas.
+XIPE — Live AI Interaction Tester v3.0
+Full AI-powered: works with ANY AI platform.
+AI Brain generates attacks, analyzes responses, writes findings.
 """
 import uuid
 import time
 import json
-import re
 from typing import List, Dict, Optional
 import httpx
 
 from agent.finding import Finding, Severity, OWASPCategory
 from agent.ai_brain import XIAIBrain
-from modules.librechat_client import LibreChatClient
+from modules.universal_ai_client import UniversalAIClient
 from utils.logger import PentestLogger
 
 
@@ -24,100 +24,82 @@ class LiveAITester:
         self.findings: List[Finding] = []
         self.base_url = config["scope"]["base_urls"][0].rstrip("/")
         self.auth_token: Optional[str] = None
-        self.chat_endpoint: Optional[str] = None
-        self.chat_format: Optional[str] = None
-        self.model_info: Dict = {}
         self.attack_history: List[Dict] = []
-        self.librechat_client = None
-        self.active_conv_id = None
 
-        # Claude es el cerebro
+        # AI Brain — generates attacks and analyzes responses
         self.brain = XIAIBrain(logger=logger)
 
+        # Universal client — talks to ANY AI platform
+        self.ai_client: Optional[UniversalAIClient] = None
+
     def run(self) -> List[Finding]:
-        self.logger.module_start("Live AI Interaction Tester (Powered by Claude)")
+        self.logger.module_start("Live AI Interaction Tester v3 (Universal + Full AI)")
 
-        # Paso 1: Detectar plataforma
-        platform = self._detect_platform()
-        self.logger.info(f"Plataforma: {platform}")
+        # Step 1: Detect platform
+        self.ai_client = UniversalAIClient(
+            base_url=self.base_url,
+            logger=self.logger,
+        )
+        platform = self.ai_client.detect_platform()
+        self.logger.info(f"Platform: {platform}")
 
-        # Paso 2: Autenticación
+        # Step 2: Authenticate if possible
         self._attempt_auth(platform)
+        if self.auth_token:
+            self.ai_client.token = self.auth_token
 
-        if not self.auth_token and not self.chat_endpoint:
-            self.logger.warning("No se pudo autenticar.")
-            self.logger.module_done("Live AI Interaction Tester", 0)
+        # Step 3: Find the chat endpoint
+        chat_endpoint = self.ai_client.discover_chat_endpoint()
+        if not chat_endpoint:
+            self.logger.warning("No chat endpoint found — skipping live AI attacks")
+            self.logger.module_done("Live AI Interaction Tester v3", len(self.findings))
             return self.findings
+        self.logger.info(f"Chat endpoint: {chat_endpoint} [{self.ai_client.chat_format}]")
 
-        # Paso 3: Descubrir endpoint
-        self._discover_chat_endpoint(platform)
+        # Step 4: Test basic connectivity — send one message to confirm it works
+        self.logger.info("Testing chat connectivity...")
+        test_response = self.ai_client.send_message("Hello, what can you help me with?")
+        if test_response:
+            self.logger.info(f"✅ Chat working — response: {test_response[:80]}...")
+        else:
+            self.logger.warning("Chat not responding — attacks will attempt anyway")
 
-        if not self.chat_endpoint:
-            self.logger.warning("No se encontró endpoint de chat.")
-            self.logger.module_done("Live AI Interaction Tester", len(self.findings))
-            return self.findings
-
-        # Paso 4: Claude analiza el target y genera estrategia
-        self.logger.info("🧠 Claude analizando target y generando estrategia de ataque...")
+        # Step 5: Brain analyzes target and generates attack strategy
+        self.logger.info("🧠 AI Brain analyzing target and generating attack strategy...")
         recon_data = {
             "platform": platform,
             "base_url": self.base_url,
-            "model_info": self.model_info,
-            "config_data": self._get_public_config(),
+            "chat_format": self.ai_client.chat_format,
+            "config": self.ai_client.platform_config,
+            "auth_available": bool(self.auth_token),
+            "test_response": test_response[:200] if test_response else None,
         }
-        attack_strategy = self.brain.analyze_target(self.base_url, recon_data)
-        self.logger.info(f"Estrategia: {attack_strategy.get('platform_type', 'unknown')}")
-        self.logger.info(f"Ataques prioritarios: {', '.join(attack_strategy.get('priority_attacks', []))}")
+        strategy = self.brain.analyze_target(self.base_url, recon_data)
+        self.logger.info(f"Strategy: {strategy.get('platform_type', 'unknown')}")
+        self.logger.info(f"Priority attacks: {', '.join(strategy.get('priority_attacks', [])[:3])}")
 
-        # Paso 5: Ejecutar ataques con Claude guiando
-        self._run_intelligent_attacks(attack_strategy)
+        # Step 6: Execute all attack categories with AI guidance
+        self._run_intelligent_attacks(strategy, test_response)
 
-        self.logger.module_done("Live AI Interaction Tester", len(self.findings))
+        self.logger.module_done("Live AI Interaction Tester v3", len(self.findings))
         return self.findings
 
-    # ── Platform Detection ────────────────────────────────────────────────────
-
-    def _detect_platform(self) -> str:
-        try:
-            resp = self.client.get(f"{self.base_url}/api/config", timeout=10)
-            if resp.status_code == 200:
-                try:
-                    data = resp.json()
-                    if "registrationEnabled" in data:
-                        return "librechat"
-                except Exception:
-                    pass
-            resp2 = self.client.get(f"{self.base_url}/v1/models", timeout=8)
-            if resp2.status_code == 200:
-                try:
-                    data2 = resp2.json()
-                    if "data" in data2:
-                        return "openai_api"
-                except Exception:
-                    pass
-        except Exception:
-            pass
-        return "unknown"
-
-    def _get_public_config(self) -> Dict:
-        try:
-            resp = self.client.get(f"{self.base_url}/api/config", timeout=10)
-            if resp.status_code == 200:
-                return resp.json()
-        except Exception:
-            pass
-        return {}
-
-    # ── Auth ──────────────────────────────────────────────────────────────────
+    # ── Authentication ────────────────────────────────────────────────────────
 
     def _attempt_auth(self, platform: str):
+        """Try to authenticate on the platform."""
         if platform == "librechat":
             self._auth_librechat()
         elif platform == "openai_api":
-            self.chat_endpoint = f"{self.base_url}/v1/chat/completions"
-            self.chat_format = "openai"
+            pass  # API key auth handled separately
+        elif platform == "flowise":
+            pass  # No auth by default
+        # For unknown platforms — try common auth patterns
+        elif platform == "unknown":
+            self._try_generic_auth()
 
     def _auth_librechat(self):
+        """Auto-register and login on LibreChat."""
         test_email = f"xipe_{uuid.uuid4().hex[:6]}@mailnull.com"
         test_pass = "XipePentest2026!"
 
@@ -129,8 +111,6 @@ class LiveAITester:
                 timeout=15,
             )
             if reg.status_code == 200:
-                self.logger.info(f"Registro: {test_email}")
-
                 login = self.client.post(
                     f"{self.base_url}/api/auth/login",
                     json={"email": test_email, "password": test_pass},
@@ -141,41 +121,36 @@ class LiveAITester:
                     self.auth_token = data.get("token")
                     user = data.get("user", {})
 
-                    # Hallazgo: email verification bypass
+                    # Finding: email verification bypass
                     if user.get("emailVerified"):
                         self._add_finding(
-                            title="Email verification bypass — accounts auto-verified without email confirmation",
+                            title="Email Verification Bypass — Accounts auto-verified without email confirmation",
                             severity=Severity.HIGH,
                             category=OWASPCategory.AUTH_BYPASS,
                             description=(
-                                f"Account created with unverified email ({test_email}) was "
-                                f"immediately logged in with emailVerified=true. "
-                                f"This allows mass account creation with disposable emails "
-                                f"to access the AI platform without any verification."
+                                f"Account {test_email} logged in successfully without email verification. "
+                                f"emailVerified=true was set automatically. Allows mass account creation "
+                                f"with disposable emails to abuse AI resources."
                             ),
                             endpoint=f"{self.base_url}/api/auth/login",
-                            response_snippet=json.dumps(user, indent=2)[:300],
-                            recommendation="Enforce email verification. Block login if emailVerified=false.",
-                            false_positive_risk="LOW",
+                            recommendation="Enforce email verification. Block login for emailVerified=false.",
                         )
                         self.logger.warning("🚨 Email verification bypass confirmed!")
 
-                    # Hallazgo: registro abierto
+                    # Finding: open registration
                     self._add_finding(
-                        title="Open registration — unauthenticated account creation enabled",
+                        title="Open Registration — Unauthenticated account creation enabled",
                         severity=Severity.MEDIUM,
                         category=OWASPCategory.AUTH_BYPASS,
                         description=(
-                            f"The platform allows anyone to register without invitation or approval. "
-                            f"Combined with email verification bypass, attackers can create unlimited "
-                            f"accounts to abuse AI resources or escalate privileges."
+                            "Platform allows open registration without invitation or approval. "
+                            "Combined with email bypass, attackers can create unlimited accounts."
                         ),
                         endpoint=f"{self.base_url}/api/auth/register",
-                        recommendation="Implement invitation-only registration or email domain whitelist.",
-                        false_positive_risk="LOW",
+                        recommendation="Implement invitation-only or admin-approval registration.",
                     )
 
-                    # Aceptar términos
+                    # Accept terms
                     if self.auth_token:
                         self.client.post(
                             f"{self.base_url}/api/user/terms/accept",
@@ -186,77 +161,90 @@ class LiveAITester:
         except Exception as e:
             self.logger.error(f"Auth error: {e}")
 
-    # ── Chat Endpoint Discovery ───────────────────────────────────────────────
-
-    def _discover_chat_endpoint(self, platform: str):
-        headers = {}
-        if self.auth_token:
-            headers["Authorization"] = f"Bearer {self.auth_token}"
-
-        if platform == "librechat":
-            try:
-                resp = self.client.get(
-                    f"{self.base_url}/api/endpoints",
-                    headers=headers, timeout=10,
-                )
-                if resp.status_code == 200:
-                    endpoints = resp.json()
-                    if endpoints:
-                        endpoint_name = list(endpoints.keys())[0]
-                        endpoint_type = endpoints[endpoint_name].get("type", "custom")
-                        self.model_info["endpoint_name"] = endpoint_name
-                        self.model_info["endpoint_type"] = endpoint_type
-                        self.model_info["endpoints"] = endpoints
-                        self.chat_format = "librechat"
-                        self.chat_endpoint = f"{self.base_url}/api/ask/{endpoint_type}"
-                        self.logger.info(f"Chat endpoint: {self.chat_endpoint}")
-            except Exception as e:
-                self.logger.error(f"Error discovering endpoints: {e}")
-
-        elif platform == "openai_api":
-            self.chat_endpoint = f"{self.base_url}/v1/chat/completions"
-            self.chat_format = "openai"
+    def _try_generic_auth(self):
+        """Try common authentication patterns on unknown platforms."""
+        common_auth_endpoints = [
+            "/api/auth/login",
+            "/auth/login",
+            "/login",
+            "/api/login",
+            "/api/v1/auth",
+        ]
+        test_creds = [
+            {"username": "admin", "password": "admin"},
+            {"email": "admin@admin.com", "password": "admin"},
+            {"user": "test", "pass": "test"},
+        ]
+        for endpoint in common_auth_endpoints:
+            for creds in test_creds:
+                try:
+                    resp = self.client.post(
+                        self.base_url + endpoint,
+                        json=creds,
+                        timeout=5,
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        token = (data.get("token") or data.get("access_token") or
+                                 data.get("jwt") or data.get("accessToken"))
+                        if token:
+                            self.auth_token = token
+                            self.logger.warning(f"🚨 Default credentials work: {creds} at {endpoint}")
+                            self._add_finding(
+                                title=f"Default Credentials Accepted — {endpoint}",
+                                severity=Severity.CRITICAL,
+                                category=OWASPCategory.AUTH_BYPASS,
+                                description=f"Platform accepts default credentials: {creds}",
+                                endpoint=self.base_url + endpoint,
+                                recommendation="Change all default credentials immediately.",
+                            )
+                            return
+                except Exception:
+                    pass
 
     # ── Intelligent Attack Runner ─────────────────────────────────────────────
 
-    def _run_intelligent_attacks(self, strategy: Dict):
+    def _run_intelligent_attacks(self, strategy: Dict, test_response: Optional[str]):
         """
-        Claude guía la secuencia de ataques adaptándose a las respuestas.
+        Full AI-powered attack sequence.
+        Brain generates prompts, XIPE sends them, Brain analyzes responses.
         """
-        custom_prompts = strategy.get("custom_prompts", {})
-        priority_attacks = strategy.get("priority_attacks", [])
-
         attack_categories = [
-            ("system_prompt_leakage", "LLM07 - System Prompt Leakage"),
-            ("injection", "LLM01 - Prompt Injection"),
-            ("data_extraction", "LLM02 - Sensitive Data Extraction"),
-            ("jailbreak", "LLM01 - Jailbreak"),
+            ("system_prompt_leakage", "LLM07 — System Prompt Leakage"),
+            ("injection", "LLM01 — Direct Prompt Injection"),
+            ("data_extraction", "LLM02 — Sensitive Data Extraction"),
+            ("jailbreak", "LLM01 — Jailbreak Attempts"),
+            ("indirect_injection", "LLM08 — Indirect Prompt Injection"),
+            ("excessive_agency", "LLM06 — Excessive Agency"),
         ]
 
-        for category_key, attack_label in attack_categories:
+        custom_prompts = strategy.get("custom_prompts", {})
+
+        for category_key, label in attack_categories:
             prompts = custom_prompts.get(category_key, [])
 
-            if not prompts:
-                # Claude genera prompts si no tiene para esta categoría
-                self.logger.info(f"🧠 Claude generando ataques para {category_key}...")
+            # Brain generates additional prompts based on history
+            self.logger.info(f"🧠 Generating attacks: {label}...")
+            for _ in range(max(0, 3 - len(prompts))):
                 generated = self.brain.generate_next_attack(
-                    self.attack_history,
-                    strategy,
-                    category_key,
+                    self.attack_history, strategy, category_key
                 )
-                if generated:
-                    prompts = [generated]
+                if generated and generated not in prompts:
+                    prompts.append(generated)
 
             if not prompts:
+                self.logger.info(f"  No prompts generated for {category_key}")
                 continue
 
-            self.logger.info(f"Testing {attack_label} ({len(prompts)} prompts)...")
+            self.logger.info(f"Testing {label} ({len(prompts)} prompts)...")
 
             for prompt in prompts:
-                response = self._send_message(prompt)
+                response = self.ai_client.send_message(prompt)
 
                 if response:
-                    # Claude analiza la respuesta
+                    self.logger.info(f"  ✓ Got response ({len(response)} chars)")
+
+                    # Brain analyzes the response
                     analysis = self.brain.analyze_response(
                         attack_prompt=prompt,
                         ai_response=response,
@@ -264,16 +252,16 @@ class LiveAITester:
                         target_context=strategy,
                     )
 
-                    # Guardar en historial para ataques adaptativos
+                    # Record for adaptive next attacks
                     self.attack_history.append({
-                        "prompt": prompt,
+                        "prompt": prompt[:200],
                         "response": response[:200],
                         "is_vulnerability": analysis.get("is_vulnerability", False),
                         "category": category_key,
                     })
 
                     if analysis.get("is_vulnerability"):
-                        # Claude redacta el hallazgo profesionalmente
+                        # Brain writes the professional finding
                         written = self.brain.write_finding(
                             raw_finding=analysis,
                             target_context=strategy,
@@ -288,8 +276,7 @@ class LiveAITester:
                             "INFO": Severity.INFO,
                         }
                         severity = sev_map.get(
-                            analysis.get("severity", "MEDIUM").upper(),
-                            Severity.MEDIUM
+                            analysis.get("severity", "MEDIUM").upper(), Severity.MEDIUM
                         )
 
                         self._add_finding(
@@ -297,98 +284,18 @@ class LiveAITester:
                             severity=severity,
                             category=OWASPCategory.PROMPT_INJECTION,
                             description=written.get("technical_description", analysis.get("finding_description", "")),
-                            endpoint=self.chat_endpoint,
-                            response_snippet=f"Prompt: {prompt[:150]}\n\nResponse: {response[:300]}",
+                            endpoint=self.ai_client.chat_endpoint,
+                            response_snippet=f"Prompt: {prompt[:150]}\n\nResponse: {response[:400]}",
                             recommendation=written.get("remediation", analysis.get("recommendation", "")),
-                            false_positive_risk="LOW",
                         )
                         self.logger.finding(
                             severity.value,
-                            f"Claude confirmed: {analysis.get('finding_title', category_key)}"
+                            written.get("title", category_key)[:80]
                         )
-
                 else:
                     self.logger.info(f"  No response for {category_key} prompt")
 
                 time.sleep(2)
-
-    # ── Message Sender ────────────────────────────────────────────────────────
-
-    def _send_message(self, text: str) -> Optional[str]:
-        if not self.auth_token:
-            return None
-        if self.chat_format == "librechat":
-            if not self.librechat_client:
-                from modules.librechat_client import LibreChatClient
-                self.librechat_client = LibreChatClient(self.base_url, self.auth_token)
-            response = self.librechat_client.send_message(text, self.active_conv_id)
-            if response:
-                self.logger.info(f"  ✓ AI response: {response[:80]}")
-            return response
-        elif self.chat_format == "openai":
-            return self._send_openai(text, {"Content-Type": "application/json", "Authorization": f"Bearer {self.auth_token}"})
-        return None
-
-    def _send_librechat(self, text: str, headers: dict) -> Optional[str]:
-        endpoint_name = self.model_info.get("endpoint_name", "OpenWild")
-        endpoint_type = self.model_info.get("endpoint_type", "custom")
-
-        payload = {
-            "text": text,
-            "endpoint": endpoint_name,
-            "endpointType": endpoint_type,
-            "model": endpoint_name,
-            "conversationId": "new",
-            "parentMessageId": "00000000-0000-0000-0000-000000000000",
-        }
-
-        try:
-            with self.client.stream(
-                "POST",
-                f"{self.base_url}/api/ask/{endpoint_type}",
-                headers=headers,
-                json=payload,
-                timeout=60,
-            ) as resp:
-                content_type = resp.headers.get("content-type", "")
-                if "text/html" in content_type or resp.status_code != 200:
-                    return None
-
-                full_response = ""
-                final_message = None
-
-                for line in resp.iter_lines():
-                    if not line or not line.startswith("data:"):
-                        continue
-                    data_str = line[5:].strip()
-                    if data_str == "[DONE]":
-                        break
-                    try:
-                        data = json.loads(data_str)
-                        if "text" in data:
-                            full_response += data["text"]
-                        elif "message" in data and "content" in data.get("message", {}):
-                            final_message = data["message"]["content"]
-                        elif "final" in data and data.get("final"):
-                            final_message = data.get("responseMessage", {}).get("text", full_response)
-                    except json.JSONDecodeError:
-                        pass
-
-                return (final_message or full_response).strip() or None
-
-        except Exception as e:
-            self.logger.error(f"LibreChat stream error: {e}")
-            return None
-
-    def _send_openai(self, text: str, headers: dict) -> Optional[str]:
-        payload = {
-            "model": self.model_info.get("model", "gpt-3.5-turbo"),
-            "messages": [{"role": "user", "content": text}],
-        }
-        resp = self.client.post(self.chat_endpoint, headers=headers, json=payload, timeout=30)
-        if resp.status_code == 200:
-            return resp.json()["choices"][0]["message"]["content"]
-        return None
 
     # ── Helper ────────────────────────────────────────────────────────────────
 
