@@ -11,6 +11,7 @@ import httpx
 
 from agent.finding import Finding, Severity, OWASPCategory
 from agent.ai_brain import XIAIBrain
+from modules.librechat_client import LibreChatClient
 from utils.logger import PentestLogger
 
 
@@ -27,6 +28,8 @@ class LiveAITester:
         self.chat_format: Optional[str] = None
         self.model_info: Dict = {}
         self.attack_history: List[Dict] = []
+        self.librechat_client = None
+        self.active_conv_id = None
 
         # Claude es el cerebro
         self.brain = XIAIBrain(logger=logger)
@@ -312,21 +315,18 @@ class LiveAITester:
     # ── Message Sender ────────────────────────────────────────────────────────
 
     def _send_message(self, text: str) -> Optional[str]:
-        if not self.chat_endpoint or not self.auth_token:
+        if not self.auth_token:
             return None
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.auth_token}",
-        }
-
-        try:
-            if self.chat_format == "librechat":
-                return self._send_librechat(text, headers)
-            elif self.chat_format == "openai":
-                return self._send_openai(text, headers)
-        except Exception as e:
-            self.logger.error(f"Send error: {e}")
+        if self.chat_format == "librechat":
+            if not self.librechat_client:
+                from modules.librechat_client import LibreChatClient
+                self.librechat_client = LibreChatClient(self.base_url, self.auth_token)
+            response = self.librechat_client.send_message(text, self.active_conv_id)
+            if response:
+                self.logger.info(f"  ✓ AI response: {response[:80]}")
+            return response
+        elif self.chat_format == "openai":
+            return self._send_openai(text, {"Content-Type": "application/json", "Authorization": f"Bearer {self.auth_token}"})
         return None
 
     def _send_librechat(self, text: str, headers: dict) -> Optional[str]:
