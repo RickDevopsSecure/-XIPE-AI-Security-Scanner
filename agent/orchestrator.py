@@ -1,25 +1,32 @@
 """
-XIPE — Orquestador v2
-Agrega: notificaciones Teams, upload S3, reporte bilingüe, config desde SSM.
+XIPE — Orchestrator v3.0
+Unified 4-phase intelligent assessment flow.
+
+PHASE 1: Reconnaissance     → fingerprint target
+PHASE 2: Assessment Plan    → Brain decides what to test
+PHASE 3: Parallel Execution → run only relevant modules
+PHASE 4: Report + Training  → score, report, persist
 """
 import json
 import os
 import time
+import concurrent.futures
 from datetime import datetime
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Optional, Tuple
 import httpx
 import yaml
 
-from agent.finding import Finding, Severity
-from modules.prompt_injection import PromptInjectionTester
-from modules.web_recon import WebReconModule
-from modules.live_ai_tester import LiveAITester
-from modules.rag_tester import RAGTester
-from modules.api_tester import APITester
-from modules.agent_tester import AgentTester
-from reporting.pdf_report import PDFReportGenerator
+from agent.brain import XIPEBrain
+from agent.finding import Finding, Severity, OWASPCategory
+from modules.web_security import WebSecurityModule
+from modules.ai_security import AISecurityModule
+from modules.js_analyzer import JSAnalyzer
+from modules.tls_checker import TLSChecker
+from modules.session_checker import SessionChecker
+from reporting.report_generator import ReportGenerator
 from reporting.teams_notifier import TeamsNotifier
+from reporting.training_data_collector import TrainingDataCollector
 from utils.logger import PentestLogger
 
 
@@ -27,13 +34,9 @@ class PentestOrchestrator:
 
     def __init__(self, config_path: str):
         self.config = self._load_config(config_path)
-        import os as _os
-        if _os.environ.get("TARGET_URL"):
-            self.config["scope"]["base_urls"] = [_os.environ["TARGET_URL"]]
-        if _os.environ.get("CLIENT_NAME"):
-            self.config["engagement"]["client_name"] = _os.environ["CLIENT_NAME"]
-        self._apply_env_overrides()          # SSM / env vars tienen prioridad
+        self._apply_env_overrides()
         self.engagement_id = self.config["engagement"]["id"]
+        self.start_time = datetime.utcnow()
 
         self.logger = PentestLogger(
             log_file=self.config["output"]["log_file"],
@@ -43,126 +46,396 @@ class PentestOrchestrator:
         self.http_client = httpx.Client(
             verify=True,
             follow_redirects=True,
-            timeout=self.config["testing"]["timeout_seconds"],
-            headers={"User-Agent": "Inbest-XIPE/1.0 (Authorized Security Testing)"},
+            timeout=self.config["testing"].get("timeout_seconds", 20),
+            headers={"User-Agent": "Inbest-XIPE/3.0 (Authorized Security Assessment)"},
         )
 
-        # Teams notifier (opcional)
+        # Central Brain
+        self.brain = XIPEBrain(logger=self.logger)
+
+        # Output
         webhook = (
             self.config.get("integrations", {}).get("teams_webhook_url")
             or os.environ.get("TEAMS_WEBHOOK_URL", "")
         )
         self.teams = TeamsNotifier(webhook) if webhook else None
 
+        # Training data collector
+        aws = self.config.get("aws", {})
+        self.training = None
+        if aws.get("enabled") and aws.get("s3_bucket"):
+            self.training = TrainingDataCollector(
+                s3_bucket=aws["s3_bucket"],
+                region=aws.get("region", "us-east-1"),
+            )
+
         self.all_findings: List[Finding] = []
-        self.start_time = datetime.utcnow()
+        self.classification: Dict = {}
+        self.assessment_plan: Dict = {}
+        self.ai_interactions: List[Dict] = []
+
+    # ── Main Flow ─────────────────────────────────────────────────────────────
 
     def run(self):
         self._print_banner()
         self._validate_authorization()
-        self._verify_connectivity()
 
-        # Recon primero — descubre endpoints automáticamente
-        recon = WebReconModule(self.config, self.logger, self.http_client)
-        self.all_findings.extend(recon.run())
+        target_url = self.config["scope"]["base_urls"][0]
 
-        modules_config = self.config["modules"]
-        # Live AI Interaction — ataca la IA directamente
-        if modules_config.get("live_ai_tester", True):
-            tester = LiveAITester(self.config, self.logger, self.http_client)
-            self.all_findings.extend(tester.run())
+        # ── PHASE 1: RECONNAISSANCE ───────────────────────────────────────────
+        self.logger.section("PHASE 1 — Reconnaissance")
+        recon_data = self._run_reconnaissance(target_url)
+        self.logger.info(f"Surface detected: {recon_data.get('surface_summary', 'unknown')}")
 
-        if modules_config.get("api_tester", True):
-            tester = APITester(self.config, self.logger, self.http_client)
-            self.all_findings.extend(tester.run())
+        # Brain classifies the target
+        self.logger.info("🧠 Brain classifying target...")
+        self.classification = self.brain.classify_target(target_url, recon_data)
+        self._log_classification()
 
-        if modules_config.get("prompt_injection", True):
-            tester = PromptInjectionTester(self.config, self.logger, self.http_client)
-            findings = tester.run()
-            # Notificación inmediata por CRITICAL
-            for f in findings:
-                if self.teams and f.severity == Severity.CRITICAL:
-                    self.teams.notify_finding_realtime(f, self.engagement_id)
-            self.all_findings.extend(findings)
+        # ── PHASE 2: ASSESSMENT PLAN ─────────────────────────────────────────
+        self.logger.section("PHASE 2 — Assessment Plan")
+        self.logger.info("🧠 Brain planning assessment...")
+        self.assessment_plan = self.brain.plan_assessment(target_url, self.classification)
+        self._log_plan()
 
-        if modules_config.get("rag_tester", True):
-            tester = RAGTester(self.config, self.logger, self.http_client)
-            self.all_findings.extend(tester.run())
+        # ── PHASE 3: EXECUTION ───────────────────────────────────────────────
+        self.logger.section("PHASE 3 — Execution")
+        self._run_modules_parallel()
 
-        if modules_config.get("agent_tester", True):
-            tester = AgentTester(self.config, self.logger, self.http_client)
-            self.all_findings.extend(tester.run())
-
+        # ── PHASE 4: SCORING + REPORT ────────────────────────────────────────
+        self.logger.section("PHASE 4 — Scoring & Report")
+        self._score_all_findings()
         self._generate_outputs()
         self._print_summary()
 
-    # ── Outputs ───────────────────────────────────────────────────────────────
+    # ── Phase 1: Reconnaissance ───────────────────────────────────────────────
+
+    def _run_reconnaissance(self, url: str) -> Dict:
+        """Passive/low-impact fingerprinting of the target."""
+        data = {
+            "url": url,
+            "tech": [],
+            "headers": {},
+            "has_ai": False,
+            "has_api": False,
+            "is_spa": False,
+            "is_authenticated": False,
+            "status_code": None,
+            "server": None,
+            "title": None,
+            "tls": url.startswith("https"),
+            "surface_summary": "",
+        }
+
+        try:
+            self._verify_connectivity(url)
+            resp = self.http_client.get(url, timeout=15)
+            data["status_code"] = resp.status_code
+            headers = {k.lower(): v for k, v in resp.headers.items()}
+            data["headers"] = headers
+            data["server"] = headers.get("server", headers.get("x-powered-by", ""))
+
+            body = resp.text.lower()
+
+            # Title
+            import re
+            m = re.search(r"<title>([^<]{1,100})</title>", resp.text, re.I)
+            if m:
+                data["title"] = m.group(1).strip()
+
+            # Tech fingerprinting
+            fingerprints = {
+                "WordPress": ["wp-content", "wp-includes"],
+                "React": ["react", "_next/static", "__next"],
+                "Vue.js": ["__vue__", "vue-router"],
+                "Angular": ["ng-version", "_nghost"],
+                "Next.js": ["__next", "_next/"],
+                "Django": ["csrfmiddlewaretoken"],
+                "Laravel": ["laravel_session"],
+                "Cloudflare": ["cf-ray"],
+                "AWS CloudFront": ["x-amz-cf-id"],
+                "Nginx": ["server: nginx"],
+                "Apache": ["server: apache"],
+            }
+            combined = body + str(headers)
+            for tech, patterns in fingerprints.items():
+                if any(p in combined for p in patterns):
+                    data["tech"].append(tech)
+
+            # AI detection
+            ai_words = ["openai", "anthropic", "gpt", "llm", "chatbot",
+                        "ai assistant", "claude", "llama", "flowise", "librechat"]
+            if any(w in body for w in ai_words):
+                data["has_ai"] = True
+
+            # API detection
+            for path in ["/api", "/api/v1", "/graphql", "/v1"]:
+                try:
+                    r = self.http_client.get(url.rstrip("/") + path, timeout=5)
+                    if r.status_code in (200, 401, 403):
+                        ct = r.headers.get("content-type", "")
+                        if "html" not in ct:
+                            data["has_api"] = True
+                            break
+                except Exception:
+                    pass
+
+            # SPA detection
+            import uuid
+            canary = f"/{uuid.uuid4().hex[:8]}"
+            try:
+                cr = self.http_client.get(url.rstrip("/") + canary, timeout=5)
+                if cr.status_code == 200 and "html" in cr.headers.get("content-type", ""):
+                    data["is_spa"] = True
+            except Exception:
+                pass
+
+            # Auth indicators
+            auth_words = ["login", "sign in", "dashboard", "portal", "account"]
+            if any(w in body for w in auth_words):
+                data["is_authenticated"] = True
+
+            data["surface_summary"] = (
+                f"{'HTTPS' if data['tls'] else 'HTTP'} | "
+                f"Status {data['status_code']} | "
+                f"Tech: {', '.join(data['tech'][:3]) or 'unknown'} | "
+                f"{'AI ' if data['has_ai'] else ''}"
+                f"{'API ' if data['has_api'] else ''}"
+                f"{'SPA' if data['is_spa'] else ''}"
+            )
+
+        except Exception as e:
+            self.logger.error(f"Recon error: {e}")
+            data["surface_summary"] = f"Error during recon: {e}"
+
+        return data
+
+    # ── Phase 3: Module Execution ─────────────────────────────────────────────
+
+    def _run_modules_parallel(self):
+        """Run relevant modules in parallel with concurrency control."""
+        plan = self.assessment_plan.get("modules_to_run", {})
+        max_workers = self.config["testing"].get("max_concurrent_modules", 3)
+
+        tasks = []
+
+        if plan.get("web_security", True):
+            tasks.append(("Web Security", self._run_web_security))
+        if plan.get("tls_transport", True):
+            tasks.append(("TLS / Transport", self._run_tls))
+        if plan.get("js_analysis") and self.classification.get("is_spa"):
+            tasks.append(("JavaScript Analysis", self._run_js_analysis))
+        if plan.get("session_security") and self.classification.get("is_authenticated"):
+            tasks.append(("Session Security", self._run_session))
+        if plan.get("api_security") and self.classification.get("has_api"):
+            tasks.append(("API Security", self._run_api_security))
+        if plan.get("ai_security") and self.classification.get("has_ai"):
+            tasks.append(("AI Security", self._run_ai_security))
+
+        self.logger.info(f"Running {len(tasks)} modules (max {max_workers} parallel)")
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(fn): name
+                for name, fn in tasks
+            }
+            for future in concurrent.futures.as_completed(futures):
+                name = futures[future]
+                try:
+                    findings = future.result(timeout=120)
+                    self.all_findings.extend(findings or [])
+                    self.logger.info(f"✓ {name}: {len(findings or [])} findings")
+                except Exception as e:
+                    self.logger.error(f"Module '{name}' failed: {e}")
+
+        # Trustworthiness runs after AI security (needs interactions)
+        if plan.get("trustworthiness") and self.ai_interactions:
+            self.logger.info("Running AI Trustworthiness evaluation...")
+            tw_findings = self._run_trustworthiness()
+            self.all_findings.extend(tw_findings or [])
+
+    def _run_web_security(self) -> List[Finding]:
+        mod = WebSecurityModule(
+            config=self.config,
+            logger=self.logger,
+            http_client=self.http_client,
+            brain=self.brain,
+            classification=self.classification,
+            assessment_plan=self.assessment_plan,
+        )
+        return mod.run()
+
+    def _run_tls(self) -> List[Finding]:
+        mod = TLSChecker(
+            config=self.config,
+            logger=self.logger,
+            http_client=self.http_client,
+        )
+        return mod.run()
+
+    def _run_js_analysis(self) -> List[Finding]:
+        mod = JSAnalyzer(
+            config=self.config,
+            logger=self.logger,
+            http_client=self.http_client,
+        )
+        return mod.run()
+
+    def _run_session(self) -> List[Finding]:
+        mod = SessionChecker(
+            config=self.config,
+            logger=self.logger,
+            http_client=self.http_client,
+        )
+        return mod.run()
+
+    def _run_api_security(self) -> List[Finding]:
+        mod = WebSecurityModule(
+            config=self.config,
+            logger=self.logger,
+            http_client=self.http_client,
+            brain=self.brain,
+            classification=self.classification,
+            assessment_plan=self.assessment_plan,
+        )
+        return mod.run_api_checks()
+
+    def _run_ai_security(self) -> List[Finding]:
+        mod = AISecurityModule(
+            config=self.config,
+            logger=self.logger,
+            http_client=self.http_client,
+            brain=self.brain,
+            classification=self.classification,
+        )
+        findings = mod.run()
+        self.ai_interactions = mod.interactions
+        return findings
+
+    def _run_trustworthiness(self) -> List[Finding]:
+        from modules.trustworthiness import TrustworthinessEvaluator
+        mod = TrustworthinessEvaluator(
+            brain=self.brain,
+            logger=self.logger,
+            interactions=self.ai_interactions,
+            classification=self.classification,
+        )
+        return mod.run()
+
+    # ── Phase 4: Scoring + Output ─────────────────────────────────────────────
+
+    def _score_all_findings(self):
+        """Apply HackerOne-inspired scoring to every finding."""
+        for finding in self.all_findings:
+            finding.scoring = self.brain.score_finding(finding, self.classification)
+
+        # Sort by priority score descending
+        self.all_findings.sort(key=lambda f: f.scoring.priority_score, reverse=True)
 
     def _generate_outputs(self):
-        self.logger.section("Generando Reportes")
+        deduplicated = self._deduplicate()
+        duration = int((datetime.utcnow() - self.start_time).total_seconds())
 
-        deduplicated = self._deduplicate_findings()
-        removed = len(self.all_findings) - len(deduplicated)
-        if removed > 0:
-            self.logger.info(f"Deduplicación: {removed} hallazgo(s) consolidados.")
+        # Trustworthiness section
+        trustworthiness = None
+        if self.ai_interactions:
+            trustworthiness = self.brain.evaluate_trustworthiness(self.ai_interactions)
+
+        # Executive summary
+        exec_summary = self.brain.generate_executive_summary(
+            findings=deduplicated,
+            classification=self.classification,
+            url=self.config["scope"]["base_urls"][0],
+            duration_seconds=duration,
+        )
+
+        assessment_result = {
+            "engagement": self.config["engagement"],
+            "target": self.config["scope"]["base_urls"][0],
+            "classification": self.classification,
+            "assessment_plan": self.assessment_plan,
+            "executive_summary": exec_summary,
+            "execution": {
+                "start_time": self.start_time.isoformat(),
+                "end_time": datetime.utcnow().isoformat(),
+                "duration_seconds": duration,
+                "total_findings": len(deduplicated),
+                "by_severity": self._count_by_severity(deduplicated),
+                "by_module": self._count_by_module(deduplicated),
+            },
+            "findings": [f.to_dict() for f in deduplicated],
+            "trustworthiness": trustworthiness,
+        }
 
         output_dir = Path(self.config["output"]["json_results"]).parent
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        duration = int((datetime.utcnow() - self.start_time).total_seconds())
-
-        execution_meta = {
-            "start_time":     self.start_time.isoformat(),
-            "end_time":       datetime.utcnow().isoformat(),
-            "duration_seconds": duration,
-            "total_findings": len(deduplicated),
-            "total_raw":      len(self.all_findings),
-            "by_severity":    self._count_by_severity(deduplicated),
-        }
-
-        # JSON
+        # JSON report
         json_path = self.config["output"]["json_results"]
-        results = {
-            "engagement": self.config["engagement"],
-            "execution":  execution_meta,
-            "findings":   [f.to_dict() for f in deduplicated],
-        }
         with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(results, f, indent=2, ensure_ascii=False)
-        self.logger.success(f"JSON exportado: {json_path}")
+            json.dump(assessment_result, f, indent=2, ensure_ascii=False)
+        self.logger.success(f"JSON exported: {json_path}")
 
-        # PDF bilingüe
-        pdf_path = self.config["output"]["pdf_report"]
-        generator = PDFReportGenerator(
-            findings=deduplicated,
-            engagement=self.config["engagement"],
-            output_path=pdf_path,
-            execution_meta=execution_meta,
+        # HTML + PDF report
+        generator = ReportGenerator(
+            assessment=assessment_result,
+            output_dir=str(output_dir),
         )
-        generator.generate()
-        self.logger.success(f"PDF generado: {pdf_path}")
+        html_path = generator.generate_html()
+        self.logger.success(f"HTML report: {html_path}")
+
+        pdf_path = generator.generate_pdf()
+        if pdf_path:
+            self.logger.success(f"PDF report: {pdf_path}")
 
         # S3 upload
         pdf_s3_url = None
         if self.config.get("aws", {}).get("enabled"):
-            pdf_s3_url = self._upload_to_s3(json_path, pdf_path)
+            pdf_s3_url = self._upload_to_s3(json_path, pdf_path or html_path)
 
-        # Notificación Teams — resumen final
+        # Teams notification
         if self.teams:
-            self.logger.info("Enviando resumen a Microsoft Teams...")
-            sent = self.teams.notify_engagement_complete(
+            self.logger.info("Sending Teams notification...")
+            self.teams.notify_engagement_complete(
                 engagement=self.config["engagement"],
                 findings=deduplicated,
                 pdf_s3_url=pdf_s3_url,
                 duration_seconds=duration,
             )
-            if sent:
-                self.logger.success("Notificación enviada a Teams ✓")
-            else:
-                self.logger.warning("No se pudo enviar la notificación a Teams")
+            self.logger.success("Teams notification sent ✓")
 
-    def _upload_to_s3(self, json_path: str, pdf_path: str) -> str:
-        """Sube los resultados a S3 y retorna la URL del PDF."""
+        # Training data
+        if self.training:
+            self.training.record_web_recon(
+                target_url=self.config["scope"]["base_urls"][0],
+                target_profile=self.classification,
+                findings=[f.to_dict() for f in deduplicated],
+            )
+            for interaction in self.ai_interactions:
+                self.training.record_ai_interaction(
+                    target_url=self.config["scope"]["base_urls"][0],
+                    platform_type=self.classification.get("system_type", "unknown"),
+                    **interaction,
+                )
+            self.training.record_engagement_summary(
+                engagement_id=self.engagement_id,
+                target_url=self.config["scope"]["base_urls"][0],
+                platform_type=self.classification.get("system_type", "unknown"),
+                total_findings=len(deduplicated),
+                critical=self._count_by_severity(deduplicated).get("CRITICAL", 0),
+                high=self._count_by_severity(deduplicated).get("HIGH", 0),
+                medium=self._count_by_severity(deduplicated).get("MEDIUM", 0),
+                duration_seconds=duration,
+                tech_stack=self.classification.get("tech_stack", []),
+            )
+            if self.training.save_to_s3(self.engagement_id):
+                stats = self.training.get_training_stats()
+                self.logger.info(
+                    f"🧠 Training data: {stats.get('total_records', 0)} records | "
+                    f"{stats.get('ai_interactions', 0)} AI interactions stored"
+                )
+
+    def _upload_to_s3(self, json_path: str, report_path: str) -> Optional[str]:
         try:
             import boto3
             aws = self.config["aws"]
@@ -170,127 +443,122 @@ class PentestOrchestrator:
             prefix = aws.get("s3_prefix", f"engagements/{self.engagement_id}/")
             bucket = aws["s3_bucket"]
 
-            pdf_key = prefix + Path(pdf_path).name
             s3.upload_file(json_path, bucket, prefix + Path(json_path).name)
-            s3.upload_file(pdf_path,  bucket, pdf_key)
+            report_key = prefix + Path(report_path).name
+            s3.upload_file(report_path, bucket, report_key)
 
-            # URL pre-firmada válida 7 días
-            pdf_url = s3.generate_presigned_url(
+            url = s3.generate_presigned_url(
                 "get_object",
-                Params={"Bucket": bucket, "Key": pdf_key},
+                Params={"Bucket": bucket, "Key": report_key},
                 ExpiresIn=604800,
             )
-            self.logger.success(f"Subido a S3: s3://{bucket}/{pdf_key}")
-            return pdf_url
+            self.logger.success(f"Uploaded to S3: s3://{bucket}/{report_key}")
+            return url
         except Exception as e:
-            self.logger.error(f"Error subiendo a S3: {e}")
+            self.logger.error(f"S3 upload error: {e}")
             return None
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
-    def _apply_env_overrides(self):
-        """Permite sobreescribir config desde variables de entorno (Lambda/ECS)."""
-        overrides = {
-            "ENGAGEMENT_ID":    ("engagement", "id"),
-            "CLIENT_NAME":      ("engagement", "client_name"),
-            "S3_BUCKET":        ("aws", "s3_bucket"),
-            "S3_PREFIX":        ("aws", "s3_prefix"),
-            "TEAMS_WEBHOOK_URL": None,  # manejado directo en __init__
-        }
-        for env_var, path in overrides.items():
-            val = os.environ.get(env_var)
-            if val and path:
-                section, key = path
-                if section not in self.config:
-                    self.config[section] = {}
-                self.config[section][key] = val
+    def _log_classification(self):
+        c = self.classification
+        self.logger.info(f"  System type : {c.get('system_type', 'unknown')} (confidence: {c.get('confidence', 0):.0%})")
+        self.logger.info(f"  Tech stack  : {', '.join(c.get('tech_stack', []))}")
+        self.logger.info(f"  Has AI      : {c.get('has_ai', False)}")
+        self.logger.info(f"  Has API     : {c.get('has_api', False)}")
+        self.logger.info(f"  Surface     : {c.get('surface_overview', '')}")
 
-        if os.environ.get("TARGET_URL"):
-            self.config["scope"]["base_urls"] = [os.environ["TARGET_URL"]]
-        if os.environ.get("CLIENT_NAME"):
-            self.config["engagement"]["client_name"] = os.environ["CLIENT_NAME"]
+    def _log_plan(self):
+        modules = self.assessment_plan.get("modules_to_run", {})
+        active = [k for k, v in modules.items() if v]
+        self.logger.info(f"  Active modules: {', '.join(active)}")
+        self.logger.info(f"  Priority checks: {', '.join(self.assessment_plan.get('priority_checks', [])[:3])}")
+        reasons = self.assessment_plan.get("module_reasons", {})
+        for mod, reason in list(reasons.items())[:3]:
+            self.logger.info(f"  [{mod}] {reason}")
 
-        # Override base_url desde TARGET_URL
-        target_url = os.environ.get("TARGET_URL")
-        if target_url:
-            self.config["scope"]["base_urls"] = [target_url]
-
-        client_name = os.environ.get("CLIENT_NAME")
-        if client_name:
-            self.config["engagement"]["client_name"] = client_name
-        if os.environ.get("S3_BUCKET"):
-            self.config.setdefault("aws", {})["enabled"] = True
-
-    def _deduplicate_findings(self) -> list:
-        seen = {}
-        deduped = []
-        for f in self.all_findings:
-            key = f"{f.title}|{f.category}|{f.module}"
-            if key not in seen:
-                seen[key] = f
-                deduped.append(f)
-            else:
-                existing = seen[key]
-                if f.response_snippet and not existing.response_snippet:
-                    existing.response_snippet = f.response_snippet
-        return deduped
-
-    def _count_by_severity(self, findings=None) -> dict:
-        counts = {s.value: 0 for s in Severity}
-        for f in (findings or self.all_findings):
-            counts[f.severity.value] += 1
-        return counts
-
-    def _print_banner(self):
-        self.logger.section("XIPE — AI Security Scanner v2.0 by Inbest")
-        eng = self.config["engagement"]
-        self.logger.info(f"Engagement ID : {eng['id']}")
-        self.logger.info(f"Cliente       : {eng['client_name']}")
-        self.logger.info(f"Tester        : {eng['tester']}")
-        self.logger.info(f"Autorizado por: {eng['authorized_by']}")
-        self.logger.section("")
+    def _verify_connectivity(self, url: str):
+        self.logger.info("Verifying connectivity...")
+        try:
+            resp = self.http_client.get(url, timeout=10)
+            self.logger.success(f"Connectivity OK — {url} → HTTP {resp.status_code}")
+        except Exception as e:
+            self.logger.warning(f"Connectivity check failed: {e}. Continuing...")
 
     def _validate_authorization(self):
         required = ["id", "client_name", "authorized_by", "authorization_document"]
         eng = self.config["engagement"]
         missing = [f for f in required if not eng.get(f)]
         if missing:
-            raise ValueError(f"Campos de autorización faltantes: {missing}")
-
+            raise ValueError(f"Missing authorization fields: {missing}")
         today = datetime.utcnow().date()
         start = datetime.strptime(eng["start_date"], "%Y-%m-%d").date()
-        end   = datetime.strptime(eng["end_date"],   "%Y-%m-%d").date()
+        end = datetime.strptime(eng["end_date"], "%Y-%m-%d").date()
         if not (start <= today <= end):
-            raise ValueError(f"Engagement fuera de rango autorizado: {start} — {end}")
+            raise ValueError(f"Engagement outside authorized date range: {start} — {end}")
+        self.logger.success("Authorization validated.")
 
-        self.logger.success("Autorización validada correctamente.")
+    def _deduplicate(self) -> List[Finding]:
+        seen = {}
+        result = []
+        for f in self.all_findings:
+            key = f"{f.title}|{f.category}|{f.module}"
+            if key not in seen:
+                seen[key] = f
+                result.append(f)
+        return result
 
-    def _verify_connectivity(self):
-        self.logger.info("Verificando conectividad con el entorno del cliente...")
-        base_url = self.config["scope"]["base_urls"][0]
-        health   = self.config["scope"]["endpoints"].get("health", "/health")
-        try:
-            resp = self.http_client.get(base_url + health, timeout=10)
-            self.logger.success(f"Conectividad OK — {base_url} → HTTP {resp.status_code}")
-        except Exception as e:
-            self.logger.warning(f"No se pudo verificar conectividad: {e}. Continuando...")
+    def _count_by_severity(self, findings: List[Finding]) -> Dict:
+        counts = {s.value: 0 for s in Severity}
+        for f in findings:
+            counts[f.severity.value] = counts.get(f.severity.value, 0) + 1
+        return counts
+
+    def _count_by_module(self, findings: List[Finding]) -> Dict:
+        counts: Dict = {}
+        for f in findings:
+            counts[f.module] = counts.get(f.module, 0) + 1
+        return counts
+
+    def _print_banner(self):
+        self.logger.section("XIPE — AI Security Scanner v3.0 by Inbest")
+        eng = self.config["engagement"]
+        self.logger.info(f"Engagement ID : {eng['id']}")
+        self.logger.info(f"Client        : {eng['client_name']}")
+        self.logger.info(f"Tester        : {eng['tester']}")
+        self.logger.info(f"Authorized by : {eng['authorized_by']}")
+        self.logger.section("")
 
     def _print_summary(self):
-        self.logger.section("RESUMEN DEL ENGAGEMENT")
-        by_sev = self._count_by_severity(self._deduplicate_findings())
-        self.logger.info(f"Total de hallazgos únicos: {sum(by_sev.values())}")
+        self.logger.section("ENGAGEMENT SUMMARY")
+        deduped = self._deduplicate()
+        by_sev = self._count_by_severity(deduped)
+        self.logger.info(f"Target       : {self.config['scope']['base_urls'][0]}")
+        self.logger.info(f"System type  : {self.classification.get('system_type', 'unknown')}")
+        self.logger.info(f"Total findings: {len(deduped)}")
         for sev, count in by_sev.items():
             if count > 0:
                 self.logger.info(f"  {sev}: {count}")
         duration = int((datetime.utcnow() - self.start_time).total_seconds())
-        self.logger.info(f"Duración: {duration // 60}m {duration % 60}s")
-        self.logger.success("Engagement completado. Reporte PDF listo para el cliente.")
+        self.logger.info(f"Duration      : {duration // 60}m {duration % 60}s")
+        self.logger.success("Assessment complete. Report ready.")
 
     @staticmethod
-    def _load_config(config_path: str) -> dict:
-        with open(config_path, "r", encoding="utf-8") as f:
+    def _load_config(path: str) -> dict:
+        with open(path, "r", encoding="utf-8") as f:
             return yaml.safe_load(f)
+
+    def _apply_env_overrides(self):
+        if os.environ.get("TARGET_URL"):
+            self.config["scope"]["base_urls"] = [os.environ["TARGET_URL"]]
+        if os.environ.get("CLIENT_NAME"):
+            self.config["engagement"]["client_name"] = os.environ["CLIENT_NAME"]
+        if os.environ.get("S3_BUCKET"):
+            self.config.setdefault("aws", {})["enabled"] = True
+            self.config["aws"]["s3_bucket"] = os.environ["S3_BUCKET"]
 
     def __del__(self):
         if hasattr(self, "http_client"):
             self.http_client.close()
+        if hasattr(self, "brain"):
+            self.brain.close()
