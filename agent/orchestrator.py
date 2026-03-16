@@ -14,6 +14,7 @@ import yaml
 from agent.finding import Finding, Severity
 from modules.prompt_injection import PromptInjectionTester
 from modules.web_recon import WebReconModule
+from modules.live_ai_tester import LiveAITester
 from modules.rag_tester import RAGTester
 from modules.api_tester import APITester
 from modules.agent_tester import AgentTester
@@ -66,6 +67,10 @@ class PentestOrchestrator:
         self.all_findings.extend(recon.run())
 
         modules_config = self.config["modules"]
+        # Live AI Interaction — ataca la IA directamente
+        if modules_config.get("live_ai_tester", True):
+            tester = LiveAITester(self.config, self.logger, self.http_client)
+            self.all_findings.extend(tester.run())
 
         if modules_config.get("api_tester", True):
             tester = APITester(self.config, self.logger, self.http_client)
