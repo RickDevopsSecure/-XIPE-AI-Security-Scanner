@@ -186,7 +186,8 @@ class WebSecurityModule:
                         severity = Severity.CRITICAL
                         evidence = f"Contains sensitive keywords: {', '.join(found_keywords[:3])}"
                         # Sanitize — don't store actual values
-                        evidence += f"\nFirst 100 chars: {re.sub(r'[^\s\w=]', '*', body[:100])}"
+                        sanitized = re.sub(r'[^\s\w=]', '*', body[:100])
+                        evidence += f"\nFirst 100 chars: {sanitized}"
 
                 if severity == Severity.INFO and not evidence:
                     # Just log it, not worth a finding
