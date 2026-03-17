@@ -406,8 +406,9 @@ class UniversalAIClient:
                 self._log(f"  Send error {endpoint}: {e}")
                 continue
 
-        # Even if all endpoints failed, try polling — message may have gone through
-        self._log(f"  sent={sent} — attempting poll anyway")
+        self._log(f"  sent={sent}")
+        if not sent:
+            return None  # Don't poll if nothing was sent
 
         # Poll for response
         return self._librechat_poll_response()
