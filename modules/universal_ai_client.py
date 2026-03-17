@@ -219,6 +219,13 @@ class UniversalAIClient:
                     self._detect_chat_format(resp)
                     self._log(f"Chat endpoint: {url} ({self.chat_format})")
                     return url
+                # LibreChat special: /api/ask/* returns HTML via CloudFront
+                # but still works for SSE — force it if platform is librechat
+                if self.platform == "librechat" and "/api/ask/" in path:
+                    self._log(f"LibreChat: forcing {url} despite HTML response (CloudFront SPA)")
+                    self.chat_endpoint = url
+                    self.chat_format = "librechat"
+                    return url
             except Exception:
                 pass
 
