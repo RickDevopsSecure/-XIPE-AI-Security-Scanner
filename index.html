@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XIPE v3.1 — AI Security Scanner | Inbest Cybersecurity</title>
+<title>XIPE v3.1 — Autonomous AI Security Scanner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -207,7 +207,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
   <div class="hero-grid-bg"></div>
   <div class="hero-glow"></div>
   <div class="hero-content">
-    <div class="hero-tag">XIPE v3.1 — by Inbest Cybersecurity · McKinsey/Lilli attack vectors covered</div>
+    <div class="hero-tag">XIPE v3.1 — Autonomous AI Security Scanner · Production Ready</div>
     <h1 class="hero-title">Autonomous<br>AI <em>Security</em><br>Scanner</h1>
     <p class="hero-subtitle">Point at any URL. XIPE classifies the target, maps the API surface, hunts system prompt storage, chains findings into attack narratives, and delivers a professional PDF report — all without human intervention.</p>
     <div class="hero-actions">
@@ -220,7 +220,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
     <div class="scan-box">
       <div class="scan-line"></div>
       <div class="scan-output" id="terminal-output">
-        <div><span style="color:var(--muted)">$ xipe https://lilli.mckinsey.com "McKinsey"</span></div>
+        <div><span style="color:var(--muted)">$ xipe https://target-ai-platform.com "Client"</span></div>
       </div>
     </div>
   </div>
@@ -228,8 +228,6 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
 
 <!-- MCKINSEY CALLOUT -->
 <div class="mckinsey-bar">
-  <p>Inspired by the <strong>McKinsey/Lilli breach</strong> — CodeWall's autonomous agent found SQL injection in JSON keys (missed by ZAP), chained it with IDOR, and read 46.5M messages + 728K files.
-  XIPE covers these vectors. <a href="https://codewall.ai/blog/how-we-hacked-mckinseys-ai-platform" target="_blank">Read the writeup →</a></p>
 </div>
 
 <!-- STATS -->
@@ -329,7 +327,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
       <div class="chain-num">1</div>
       <div class="chain-content">
         <div class="chain-title">API Documentation Exposed <span class="chain-arrow">→</span> 200+ endpoints mapped</div>
-        <div class="chain-desc">Swagger/OpenAPI docs publicly accessible. Full API surface revealed to any attacker — exactly how McKinsey's Lilli was mapped in minutes.</div>
+        <div class="chain-desc">Swagger/OpenAPI docs publicly accessible. Full API surface revealed to any attacker — giving attackers a complete roadmap of the attack surface.</div>
       </div>
     </div>
     <div class="chain-step">
@@ -476,12 +474,12 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
 <div>
 <div class="section">
   <div class="section-eyebrow reveal">Phase 2 Roadmap</div>
-  <h2 class="section-title reveal">Building the<br>Inbest model.</h2>
+  <h2 class="section-title reveal">Building the<br>custom model.</h2>
   <p class="section-sub reveal">Every scan stores structured data in S3. After ~1,000 engagements, this trains a custom Llama 3 — zero external API dependency, zero per-scan cost.</p>
   <div class="training-steps reveal">
     <div class="training-step"><div class="step-num">01</div><div class="step-title">Collect</div><div class="step-desc">Every scan saves attack prompts, AI responses, vulnerability labels, tech stack, severity. Sanitized — no credentials stored. Currently <span id="training-count-inline" style="color:var(--green)">—</span> records.</div></div>
     <div class="training-step"><div class="step-num">02</div><div class="step-title">Train</div><div class="step-desc">At ~1,000 engagements, fine-tune Llama 3 or Mistral 7B on the XIPE dataset. Specialized for AI security — better signal-to-noise than any general model.</div></div>
-    <div class="training-step"><div class="step-num">03</div><div class="step-title">Deploy</div><div class="step-desc">Inbest model runs on ECS alongside XIPE. Zero external API calls. Zero per-scan cost. Full control over the intelligence layer.</div></div>
+    <div class="training-step"><div class="step-num">03</div><div class="step-title">Deploy</div><div class="step-desc">The model runs on ECS alongside XIPE. Zero external API calls. Zero per-scan cost. Full control over the intelligence layer.</div></div>
   </div>
 </div>
 </div>
@@ -493,7 +491,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
   <p class="cta-sub">Deploy to AWS in minutes. Works on any target from the first run.</p>
   <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-bottom:2rem">
     <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank" class="btn-primary">→ View on GitHub</a>
-    <a href="https://inbest.cloud" target="_blank" class="btn-ghost">Inbest Cybersecurity</a>
+    <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank" class="btn-ghost">Documentation</a>
   </div>
   <div style="font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--muted);background:var(--dark2);border:1px solid var(--border);display:inline-block;padding:1rem 2rem;text-align:left">
     <span style="color:var(--green)">$</span> xipe https://any-ai-platform.com <span style="color:var(--amber)">"Client Name"</span><br>
@@ -505,7 +503,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
 </div>
 
 <footer>
-  <div>XIPE v3.1 · © 2026 Inbest Cybersecurity · Unauthorized use prohibited.</div>
+  <div>XIPE v3.1 · Built by Ricardo Martínez · For authorized security testing only.</div>
   <div class="footer-links">
     <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank">GitHub</a>
     <a href="https://inbest.cloud" target="_blank">inbest.cloud</a>
@@ -530,8 +528,8 @@ new IntersectionObserver(entries=>entries.forEach(e=>e.isIntersecting&&e.target.
 
 // TERMINAL
 const lines=[
-  {t:'── XIPE v3.1 ── by Inbest Cybersecurity',c:'muted'},
-  {t:'$ xipe https://lilli.mckinsey.com "McKinsey"',c:'text'},
+  {t:'── XIPE v3.1 ── Autonomous AI Security Scanner',c:'muted'},
+  {t:'$ xipe https://target-ai-platform.com "Client"',c:'text'},
   {t:'── PHASE 1 — Reconnaissance ──',c:'text'},
   {t:'  System type: api_platform (95% confidence)',c:'g'},
   {t:'  Tech: Node.js, PostgreSQL, S3',c:'g'},
