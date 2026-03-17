@@ -440,7 +440,7 @@ class PentestOrchestrator:
             import boto3
             aws = self.config["aws"]
             s3 = boto3.client("s3", region_name=aws["region"])
-            prefix = aws.get("s3_prefix", f"engagements/{self.engagement_id}/")
+            prefix = f"engagements/{self.engagement_id}/"
             bucket = aws["s3_bucket"]
 
             s3.upload_file(json_path, bucket, prefix + Path(json_path).name)
@@ -549,6 +549,8 @@ class PentestOrchestrator:
             return yaml.safe_load(f)
 
     def _apply_env_overrides(self):
+        if os.environ.get("ENGAGEMENT_ID"):
+            self.config["engagement"]["id"] = os.environ["ENGAGEMENT_ID"]
         if os.environ.get("TARGET_URL"):
             self.config["scope"]["base_urls"] = [os.environ["TARGET_URL"]]
         if os.environ.get("CLIENT_NAME"):

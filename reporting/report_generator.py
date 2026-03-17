@@ -36,14 +36,14 @@ class ReportGenerator:
 
     def generate_html(self) -> str:
         html = self._build_html()
-        path = self.output_dir / f"report_{self.eng_id}.html"
+        path = self.output_dir / "reporte_XIPE_local.html"
         path.write_text(html, encoding="utf-8")
         return str(path)
 
     def generate_pdf(self) -> Optional[str]:
         try:
             from weasyprint import HTML
-            html_path = self.output_dir / f"report_{self.eng_id}.html"
+            html_path = self.output_dir / "reporte_XIPE_local.html"
             pdf_path = self.output_dir / f"reporte_XIPE_local.pdf"
             HTML(filename=str(html_path)).write_pdf(str(pdf_path))
             return str(pdf_path)
