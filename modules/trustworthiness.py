@@ -13,7 +13,7 @@ from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, field
 import httpx
 
-from core.finding import (
+from agent.finding import (
     Finding, FindingModule, Severity, OWASPCategory,
     TrustworthinessMetrics, ScoringBreakdown
 )
