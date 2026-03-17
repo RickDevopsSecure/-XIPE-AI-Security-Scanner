@@ -20,6 +20,9 @@ import yaml
 from agent.brain import XIPEBrain
 from agent.finding import Finding, Severity, OWASPCategory
 from modules.web_security import WebSecurityModule
+from modules.api_mapper import APIMapper
+from modules.prompt_hunter import PromptHunter
+from modules.chain_engine import ChainEngine
 from modules.ai_security import AISecurityModule
 from modules.js_analyzer import JSAnalyzer
 from modules.tls_checker import TLSChecker
@@ -104,6 +107,10 @@ class PentestOrchestrator:
 
         # ── PHASE 4: SCORING + REPORT ────────────────────────────────────────
         self.logger.section("PHASE 4 — Scoring & Report")
+        # Chain Engine — connect findings into attack paths
+        chain_engine = ChainEngine(self.logger)
+        chains = chain_engine.analyze(self.all_findings)
+        self.all_findings.extend(chains)
         self._score_all_findings()
         self._generate_outputs()
         self._print_summary()
@@ -311,6 +318,19 @@ class PentestOrchestrator:
         findings = mod.run()
         self.ai_interactions = mod.interactions
         return findings
+
+    def _run_api_mapper(self) -> list:
+        mod = APIMapper(self.config, self.logger, self.http_client,
+                       self.brain, self.classification)
+        findings = mod.run()
+        self._api_mapper = mod
+        return findings
+
+    def _run_prompt_hunter(self) -> list:
+        auth_token = getattr(self, '_auth_token', None)
+        mod = PromptHunter(self.config, self.logger, self.http_client,
+                          self.brain, self.classification, auth_token)
+        return mod.run()
 
     def _run_trustworthiness(self) -> List[Finding]:
         from modules.trustworthiness import TrustworthinessEvaluator
