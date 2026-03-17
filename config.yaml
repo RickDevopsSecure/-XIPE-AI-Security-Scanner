@@ -1,0 +1,54 @@
+engagement:
+  id: "ENG-LOCAL-001"
+  client_name: "Mock AI Platform (Prueba Local)"
+  tester: "Ricardo - Inbest Cybersecurity"
+  start_date: "2026-01-01"
+  end_date: "2026-12-31"
+  authorized_by: "Inbest Internal Testing"
+  authorization_document: "local_test_authorized.pdf"
+
+scope:
+  base_urls:
+    - "http://localhost:8080"
+  credentials:
+    api_key: "test-key-local-xipe-2025"
+    bearer_token: ""
+    user_email: "pentest@test.local"
+    user_password: "TestPassword123!"
+  endpoints:
+    chat: "/api/v1/chat"
+    rag_query: "/api/v1/query"
+    documents: "/api/v1/documents"
+    assistants: "/api/v1/assistants"
+    workspaces: "/api/v1/workspaces"
+    health: "/health"
+
+modules:
+  rag_tester: true
+  api_tester: true
+  agent_tester: true
+  prompt_injection: true
+
+testing:
+  request_delay_seconds: 0.3
+  max_requests_per_minute: 60
+  timeout_seconds: 10
+  retry_attempts: 1
+
+alerting:
+  min_severity_to_report: "LOW"
+
+output:
+  log_file: "output/pentest.log"
+  json_results: "output/findings.json"
+  pdf_report: "output/reporte_XIPE_local.pdf"
+  dashboard_port: 5001
+
+aws:
+  enabled: true
+  region: us-east-1
+  s3_bucket: inbest-xipe-results-205210536414
+  s3_prefix: engagements/
+
+integrations:
+  teams_webhook_url: ""
