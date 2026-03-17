@@ -1,507 +1,203 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XIPE — AI Security Scanner | Inbest Cybersecurity</title>
+<title>XIPE v3.0 — AI Security Scanner | Inbest Cybersecurity</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --red:#FF2200;
-  --red2:#FF4422;
-  --dark:#080A0D;
-  --dark2:#0D1117;
-  --dark3:#161B22;
-  --border:#1E2530;
-  --text:#E6EDF3;
-  --muted:#6E7681;
-  --dim:#30363D;
-  --green:#00FF41;
-  --amber:#FFB800;
+  --red:#FF2200;--red2:#FF4422;--red3:rgba(255,34,0,.08);
+  --dark:#080A0D;--dark2:#0D1117;--dark3:#161B22;
+  --border:#1E2530;--text:#E6EDF3;--muted:#6E7681;--dim:#30363D;
+  --green:#00FF41;--amber:#FFB800;--blue:#79C0FF;--purple:#BC8CFF;
 }
-
 html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--text);overflow-x:hidden;cursor:none}
 
-body{
-  font-family:'DM Sans',sans-serif;
-  background:var(--dark);
-  color:var(--text);
-  overflow-x:hidden;
-  cursor:none;
-}
-
-/* CUSTOM CURSOR */
-.cursor{
-  position:fixed;
-  width:8px;height:8px;
-  background:var(--red);
-  border-radius:50%;
-  pointer-events:none;
-  z-index:9999;
-  transform:translate(-50%,-50%);
-  transition:width .1s,height .1s;
-  mix-blend-mode:screen;
-}
-.cursor-ring{
-  position:fixed;
-  width:30px;height:30px;
-  border:1px solid rgba(255,34,0,.4);
-  border-radius:50%;
-  pointer-events:none;
-  z-index:9998;
-  transform:translate(-50%,-50%);
-  transition:all .12s ease;
-}
-
-/* SCANLINES */
-body::after{
-  content:'';
-  position:fixed;inset:0;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);
-  pointer-events:none;
-  z-index:1000;
-}
-
-/* NOISE */
-body::before{
-  content:'';
-  position:fixed;inset:0;
-  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events:none;
-  z-index:999;
-  opacity:.6;
-}
+/* CURSOR */
+.cursor{position:fixed;width:8px;height:8px;background:var(--red);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width .1s,height .1s;mix-blend-mode:screen}
+.cursor-ring{position:fixed;width:30px;height:30px;border:1px solid rgba(255,34,0,.4);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:transform .12s ease,width .2s,height .2s}
 
 /* NAV */
-nav{
-  position:fixed;top:0;left:0;right:0;z-index:100;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 5vw;height:60px;
-  border-bottom:1px solid var(--border);
-  background:rgba(8,10,13,.9);
-  backdrop-filter:blur(20px);
-}
-.nav-logo{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:1rem;font-weight:700;
-  color:var(--text);text-decoration:none;
-  display:flex;align-items:center;gap:10px;
-}
-.logo-hex{
-  width:26px;height:26px;
-  background:var(--red);
-  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
-  animation:pulse-hex 2s infinite;
-}
-@keyframes pulse-hex{0%,100%{box-shadow:0 0 0 0 rgba(255,34,0,.4)}50%{box-shadow:0 0 20px 4px rgba(255,34,0,.2)}}
-.nav-right{display:flex;gap:2rem;align-items:center}
-.nav-link{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--muted);text-decoration:none;
-  transition:color .2s;
-}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1.2rem 3rem;border-bottom:1px solid transparent;backdrop-filter:blur(12px);transition:border-color .3s,background .3s}
+nav.scrolled{border-color:var(--border);background:rgba(8,10,13,.85)}
+.nav-logo{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:1.1rem;color:var(--text);letter-spacing:.05em}
+.nav-logo span{color:var(--red)}
+.nav-links{display:flex;align-items:center;gap:2rem}
+.nav-link{font-size:.85rem;color:var(--muted);text-decoration:none;letter-spacing:.05em;transition:color .2s}
 .nav-link:hover{color:var(--text)}
-.nav-cta{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--red);border:1px solid var(--red);
-  padding:7px 16px;text-decoration:none;
-  transition:all .2s;
-  position:relative;overflow:hidden;
-}
-.nav-cta::before{
-  content:'';position:absolute;inset:0;
-  background:var(--red);transform:translateX(-101%);
-  transition:transform .2s;
-}
-.nav-cta:hover{color:#000}
-.nav-cta:hover::before{transform:translateX(0)}
-.nav-cta span{position:relative;z-index:1}
+.nav-badge{font-family:'IBM Plex Mono',monospace;font-size:.7rem;background:var(--red3);color:var(--red);border:1px solid rgba(255,34,0,.3);padding:.2rem .6rem;border-radius:2px;letter-spacing:.1em}
 
 /* HERO */
-.hero{
-  min-height:100vh;
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  align-items:center;
-  padding:80px 5vw 60px;
-  gap:4rem;
-  position:relative;
-  overflow:hidden;
-}
+.hero{min-height:100vh;display:flex;align-items:center;position:relative;overflow:hidden;padding:8rem 3rem 4rem}
+.hero-grid-bg{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;opacity:.3;mask-image:radial-gradient(ellipse 80% 70% at 50% 50%,#000 30%,transparent 100%)}
+.hero-glow{position:absolute;top:20%;left:50%;width:800px;height:400px;background:radial-gradient(ellipse,rgba(255,34,0,.12) 0%,transparent 70%);transform:translateX(-50%);pointer-events:none}
+.hero-content{position:relative;max-width:900px;margin:0 auto;text-align:center}
+.hero-tag{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--red);letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem;opacity:0;animation:fade-up .6s .2s forwards}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(4rem,10vw,8rem);line-height:.92;letter-spacing:.02em;margin-bottom:1.5rem;opacity:0;animation:fade-up .6s .4s forwards}
+.hero-title em{font-style:normal;color:var(--red)}
+.hero-subtitle{font-size:1.1rem;color:var(--muted);max-width:600px;margin:0 auto 2.5rem;line-height:1.7;opacity:0;animation:fade-up .6s .6s forwards}
+.hero-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;opacity:0;animation:fade-up .6s .8s forwards}
+.btn-primary{display:inline-flex;align-items:center;gap:.5rem;background:var(--red);color:#fff;padding:.8rem 2rem;font-size:.9rem;font-weight:600;text-decoration:none;letter-spacing:.05em;border:none;cursor:pointer;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));transition:background .2s,transform .2s}
+.btn-primary:hover{background:var(--red2);transform:translateY(-2px)}
+.btn-ghost{display:inline-flex;align-items:center;gap:.5rem;border:1px solid var(--border);color:var(--muted);padding:.8rem 2rem;font-size:.9rem;text-decoration:none;letter-spacing:.05em;transition:border-color .2s,color .2s}
+.btn-ghost:hover{border-color:var(--muted);color:var(--text)}
 
-.hero-grid-bg{
-  position:absolute;inset:0;
-  background-image:
-    linear-gradient(rgba(255,34,0,.04) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(255,34,0,.04) 1px,transparent 1px);
-  background-size:80px 80px;
-  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black,transparent);
-}
-
-.hero-glow{
-  position:absolute;
-  top:-300px;left:-200px;
-  width:800px;height:800px;
-  background:radial-gradient(circle,rgba(255,34,0,.06) 0%,transparent 60%);
-  pointer-events:none;
-}
-
-.hero-content{position:relative;z-index:1}
-
-.hero-tag{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--red);
-  display:flex;align-items:center;gap:8px;
-  margin-bottom:1.5rem;
-}
-.hero-tag::before{
-  content:'';width:6px;height:6px;
-  background:var(--red);border-radius:50%;
-  animation:blink 1.2s infinite;
-}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
-
-.hero h1{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:clamp(4rem,9vw,8rem);
-  line-height:.9;
-  letter-spacing:.02em;
-  margin-bottom:1.5rem;
-}
-.hero h1 .line1{
-  display:block;
-  color:var(--text);
-}
-.hero h1 .line2{
-  display:block;
-  color:var(--red);
-  position:relative;
-}
-.hero h1 .line3{
-  display:block;
-  color:transparent;
-  -webkit-text-stroke:1px rgba(255,255,255,.2);
-}
-
-.hero-sub{
-  font-size:1rem;
-  color:var(--muted);
-  max-width:480px;
-  line-height:1.8;
-  margin-bottom:2.5rem;
-}
-
-.hero-actions{display:flex;gap:1rem;flex-wrap:wrap}
-
-.btn-primary{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;
-  background:var(--red);color:#000;
-  padding:14px 28px;text-decoration:none;
-  font-weight:700;
-  transition:all .2s;
-  position:relative;
-  display:inline-flex;align-items:center;gap:8px;
-}
-.btn-primary:hover{background:var(--red2);transform:translateY(-2px);box-shadow:0 8px 30px rgba(255,34,0,.3)}
-
-.btn-ghost{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;
-  background:transparent;color:var(--text);
-  padding:14px 28px;text-decoration:none;
-  border:1px solid var(--dim);
-  transition:all .2s;
-  display:inline-flex;align-items:center;gap:8px;
-}
-.btn-ghost:hover{border-color:var(--muted);background:rgba(255,255,255,.03)}
-
-/* TERMINAL */
-.terminal-wrap{position:relative;z-index:1}
-
-.terminal{
-  background:var(--dark2);
-  border:1px solid var(--border);
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.72rem;
-  position:relative;
-  overflow:hidden;
-}
-
-.terminal::before{
-  content:'';position:absolute;
-  top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,var(--red),transparent);
-  animation:scan-line 3s linear infinite;
-}
-@keyframes scan-line{0%{transform:translateY(0)}100%{transform:translateY(400px)}}
-
-.term-bar{
-  background:var(--dark3);
-  border-bottom:1px solid var(--border);
-  padding:10px 16px;
-  display:flex;align-items:center;gap:8px;
-}
-.dot{width:10px;height:10px;border-radius:50%}
-.d-r{background:#FF5F57}.d-y{background:#FFBD2E}.d-g{background:#28CA41}
-.term-title{margin-left:8px;color:var(--muted);font-size:.68rem;letter-spacing:.05em}
-
-.term-body{padding:20px;line-height:2.1;min-height:280px}
-
-.t-prompt{color:var(--red)}
-.t-cmd{color:var(--text)}
-.t-dim{color:var(--dim)}
-.t-muted{color:var(--muted)}
-.t-green{color:var(--green)}
-.t-amber{color:var(--amber)}
-.t-red{color:#FF5449;font-weight:700}
-.t-blue{color:#79C0FF}
-.t-critical{color:#FF5449;font-weight:700}
-
-.cursor-blink{
-  display:inline-block;
-  width:8px;height:14px;
-  background:var(--green);
-  vertical-align:middle;
-  animation:cursor-blink .8s step-end infinite;
-}
-@keyframes cursor-blink{0%,100%{opacity:1}50%{opacity:0}}
+/* SCAN LINE ANIMATION */
+.scan-container{position:absolute;bottom:3rem;left:50%;transform:translateX(-50%);width:600px;max-width:90vw}
+.scan-box{border:1px solid var(--border);background:rgba(13,17,23,.8);padding:1.5rem;position:relative;overflow:hidden;font-family:'IBM Plex Mono',monospace;font-size:.75rem}
+.scan-line{position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--red),transparent);animation:scan-line 2.5s linear infinite}
+@keyframes scan-line{0%{transform:translateY(0)}100%{transform:translateY(120px)}}
+.scan-output{color:var(--green);line-height:1.8}
+.scan-output .dim{color:var(--muted)}
+.scan-output .red{color:var(--red)}
+.scan-output .amber{color:var(--amber)}
+.scan-output .blue{color:var(--blue)}
 
 /* STATS BAR */
-.stats-bar{
-  border-top:1px solid var(--border);
-  border-bottom:1px solid var(--border);
-  background:var(--dark2);
-  padding:40px 5vw;
-}
-.stats-inner{
-  max-width:1100px;margin:0 auto;
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-  gap:0;
-}
-.stat-item{
-  text-align:center;
-  padding:20px;
-  border-right:1px solid var(--border);
-  position:relative;
-}
+.stats-bar{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--dark2);padding:0}
+.stats-inner{display:flex;max-width:1200px;margin:0 auto}
+.stat-item{flex:1;padding:1.8rem 2rem;border-right:1px solid var(--border);text-align:center}
 .stat-item:last-child{border-right:none}
-.stat-num{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:3.5rem;
-  line-height:1;
-  margin-bottom:6px;
-  display:block;
-}
-.stat-label{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.65rem;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  color:var(--muted);
-}
+.stat-num{font-family:'Bebas Neue',sans-serif;font-size:2.8rem;display:block;line-height:1}
+.stat-label{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.15em;margin-top:.4rem;display:block}
 
 /* SECTIONS */
-section{padding:100px 5vw;position:relative}
-.section-tag{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--red);margin-bottom:1rem;
-  display:flex;align-items:center;gap:8px;
-}
-.section-tag::before{content:'//';color:var(--dim)}
-.section-title{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:clamp(2.5rem,5vw,4.5rem);
-  letter-spacing:.02em;
-  line-height:1;
-  margin-bottom:1.5rem;
-}
-.section-sub{
-  font-size:1rem;color:var(--muted);
-  max-width:560px;line-height:1.8;
-  margin-bottom:3.5rem;
-}
+.section{padding:6rem 3rem;max-width:1200px;margin:0 auto}
+.section-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--red);letter-spacing:.2em;text-transform:uppercase;margin-bottom:1rem}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.5rem,5vw,4rem);line-height:1;margin-bottom:1.5rem}
+.section-sub{font-size:1rem;color:var(--muted);max-width:540px;line-height:1.7;margin-bottom:3rem}
 
-/* MODULES */
-.modules-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-  gap:1px;
-  background:var(--border);
-  border:1px solid var(--border);
-  max-width:1100px;
-}
-.module-card{
-  background:var(--dark2);
-  padding:2rem;
-  position:relative;
-  overflow:hidden;
-  transition:background .2s;
-}
-.module-card::after{
-  content:'';
-  position:absolute;
-  left:0;top:0;bottom:0;
-  width:2px;
-  background:var(--red);
-  transform:scaleY(0);
-  transform-origin:bottom;
-  transition:transform .3s ease;
-}
+/* PHASE FLOW */
+.phases{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--border);margin-bottom:3rem}
+.phase{padding:2rem 1.5rem;border-right:1px solid var(--border);position:relative}
+.phase:last-child{border-right:none}
+.phase::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--border)}
+.phase.active::before{background:var(--red)}
+.phase-num{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--red);letter-spacing:.15em;margin-bottom:.8rem}
+.phase-name{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;margin-bottom:.6rem}
+.phase-desc{font-size:.82rem;color:var(--muted);line-height:1.6}
+.phase-items{margin-top:1rem;display:flex;flex-direction:column;gap:.3rem}
+.phase-item{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--dim);padding:.2rem .5rem;background:rgba(255,255,255,.02);border-left:1px solid var(--dim)}
+.phase-item.highlight{color:var(--green);border-color:var(--green)}
+
+/* BRAIN SECTION */
+.brain-grid{display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:start}
+.brain-visual{background:var(--dark2);border:1px solid var(--border);padding:2rem;font-family:'IBM Plex Mono',monospace;font-size:.75rem}
+.brain-method{margin-bottom:1.2rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border)}
+.brain-method:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.brain-fn{color:var(--blue)}
+.brain-arg{color:var(--amber)}
+.brain-ret{color:var(--green)}
+.brain-comment{color:var(--muted)}
+.brain-features{display:flex;flex-direction:column;gap:1.2rem}
+.brain-feat{display:flex;gap:1rem;align-items:flex-start}
+.brain-icon{width:36px;height:36px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;background:var(--red3)}
+.brain-feat-title{font-weight:600;font-size:.95rem;margin-bottom:.2rem}
+.brain-feat-desc{font-size:.83rem;color:var(--muted);line-height:1.6}
+
+/* MODULES GRID */
+.modules-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border)}
+.module-card{background:var(--dark2);padding:2rem;position:relative;overflow:hidden;transition:background .2s}
+.module-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--red);transform:scaleX(0);transition:transform .3s;transform-origin:left}
 .module-card:hover{background:var(--dark3)}
-.module-card:hover::after{transform:scaleY(1)}
+.module-card:hover::after{transform:scaleX(1)}
+.module-num{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--muted);letter-spacing:.1em;margin-bottom:.8rem}
+.module-name{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;margin-bottom:.6rem}
+.module-desc{font-size:.83rem;color:var(--muted);line-height:1.7;margin-bottom:1rem}
+.module-tags{display:flex;flex-wrap:wrap;gap:.4rem}
+.module-tag{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--dim);border:1px solid var(--dim);padding:.15rem .4rem}
 
-.module-num{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.65rem;
-  color:var(--dim);
-  letter-spacing:.1em;
-  margin-bottom:1rem;
-}
-.module-name{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:1.6rem;
-  letter-spacing:.05em;
-  margin-bottom:.75rem;
-}
-.module-desc{font-size:.85rem;color:var(--muted);line-height:1.7;margin-bottom:1.2rem}
-.tags{display:flex;flex-wrap:wrap;gap:6px}
-.tag{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.6rem;letter-spacing:.08em;
-  padding:3px 8px;
-  border:1px solid;
-}
-.tag-r{color:#FF5449;border-color:rgba(255,84,73,.3);background:rgba(255,84,73,.08)}
-.tag-o{color:var(--red2);border-color:rgba(255,68,34,.3);background:rgba(255,68,34,.08)}
-.tag-b{color:#79C0FF;border-color:rgba(121,192,255,.3);background:rgba(121,192,255,.08)}
-.tag-p{color:#BC8CFF;border-color:rgba(188,140,255,.3);background:rgba(188,140,255,.08)}
-.tag-g{color:var(--green);border-color:rgba(0,255,65,.3);background:rgba(0,255,65,.05)}
+/* SCORING */
+.scoring-section{background:var(--dark2);border:1px solid var(--border);padding:3rem}
+.scoring-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);margin-top:2rem}
+.score-metric{background:var(--dark);padding:1.5rem;text-align:center}
+.score-metric .name{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem}
+.score-metric .desc{font-size:.78rem;color:var(--dim);line-height:1.5}
+.score-metric .icon{font-size:1.5rem;margin-bottom:.5rem}
 
-/* FINDINGS */
-.findings-bg{background:var(--dark2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-.findings-list{display:flex;flex-direction:column;gap:2px;max-width:1100px}
-.finding{
-  display:grid;
-  grid-template-columns:100px 1fr auto;
-  gap:1.5rem;
-  align-items:center;
-  background:var(--dark);
-  border:1px solid var(--border);
-  padding:16px 20px;
-  transition:border-color .2s,transform .2s;
-}
-.finding:hover{border-color:var(--dim);transform:translateX(4px)}
-.sev{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.65rem;font-weight:700;
-  padding:4px 8px;text-align:center;
-  letter-spacing:.08em;
-}
-.sev-c{background:rgba(183,28,28,.2);color:#FF5449;border:1px solid rgba(183,28,28,.3)}
-.sev-h{background:rgba(255,68,0,.15);color:var(--red2);border:1px solid rgba(255,68,0,.25)}
-.sev-m{background:rgba(255,184,0,.1);color:var(--amber);border:1px solid rgba(255,184,0,.2)}
-.finding-title{font-size:.9rem;font-weight:500}
-.finding-cat{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.62rem;color:var(--muted);margin-top:3px;
-}
-.finding-mod{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.62rem;color:var(--dim);
-  white-space:nowrap;
-}
+/* TRUSTWORTHINESS */
+.trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:2rem}
+.trust-metric{border:1px solid var(--border);padding:1.5rem;background:var(--dark2)}
+.trust-metric .metric-name{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem}
+.trust-metric .metric-desc{font-size:.78rem;color:var(--dim);line-height:1.5}
+.trust-metric .metric-icon{font-size:1.2rem;margin-bottom:.5rem}
+
+/* PLATFORMS */
+.platforms-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);margin-top:2rem}
+.platform-item{background:var(--dark2);padding:1.5rem;text-align:center;transition:background .2s}
+.platform-item:hover{background:var(--dark3)}
+.platform-name{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--text);margin-bottom:.3rem}
+.platform-type{font-size:.7rem;color:var(--muted)}
+.platform-dot{width:6px;height:6px;background:var(--green);border-radius:50%;margin:0 auto .6rem}
+
+/* TRAINING */
+.training-section{background:linear-gradient(135deg,var(--dark2),var(--dark3));border:1px solid var(--border);padding:3rem;position:relative;overflow:hidden}
+.training-section::before{content:'PHASE 2';position:absolute;right:2rem;top:2rem;font-family:'Bebas Neue',sans-serif;font-size:5rem;color:rgba(255,34,0,.04);letter-spacing:.1em}
+.training-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:2rem}
+.training-step{padding:1.5rem;border:1px solid var(--border);background:rgba(0,0,0,.3)}
+.step-num{font-family:'Bebas Neue',sans-serif;font-size:2.5rem;color:var(--red);opacity:.4;line-height:1}
+.step-title{font-size:.9rem;font-weight:600;margin:.5rem 0 .4rem}
+.step-desc{font-size:.8rem;color:var(--muted);line-height:1.6}
 
 /* CTA */
-.cta-section{
-  text-align:center;
-  padding:120px 5vw;
-  position:relative;
-  overflow:hidden;
-}
-.cta-glow{
-  position:absolute;
-  bottom:-200px;left:50%;transform:translateX(-50%);
-  width:600px;height:600px;
-  background:radial-gradient(circle,rgba(255,34,0,.08) 0%,transparent 60%);
-  pointer-events:none;
-}
-.cta-inner{position:relative;z-index:1;max-width:700px;margin:0 auto}
-.cta-pre{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;
-  color:var(--red);margin-bottom:1.5rem;
-}
-.cta h2{
-  font-family:'Bebas Neue',sans-serif;
-  font-size:clamp(3rem,7vw,6rem);
-  letter-spacing:.02em;line-height:.95;
-  margin-bottom:1.5rem;
-}
-.cta p{color:var(--muted);font-size:1rem;line-height:1.8;margin-bottom:3rem}
-.cta-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.cta-section{padding:6rem 3rem;text-align:center;position:relative;border-top:1px solid var(--border)}
+.cta-section::before{content:'';position:absolute;top:0;left:50%;width:1px;height:60px;background:linear-gradient(var(--red),transparent);transform:translateX(-50%)}
+.cta-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,7vw,6rem);margin-bottom:1rem}
+.cta-sub{color:var(--muted);margin-bottom:2.5rem;font-size:1rem}
 
 /* FOOTER */
-footer{
-  border-top:1px solid var(--border);
-  padding:32px 5vw;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:12px;
-}
-.foot-left{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.7rem;color:var(--dim);
-}
-.foot-right{
-  font-family:'IBM Plex Mono',monospace;
-  font-size:.7rem;
-  display:flex;gap:2rem;
-}
-.foot-right a{color:var(--muted);text-decoration:none;transition:color .2s}
-.foot-right a:hover{color:var(--text)}
+footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-items:center;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--muted)}
+.footer-links{display:flex;gap:2rem}
+.footer-links a{color:var(--muted);text-decoration:none;transition:color .2s}
+.footer-links a:hover{color:var(--text)}
 
 /* ANIMATIONS */
-@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
-.fade-up{animation:fadeUp .6s ease forwards;opacity:0}
-.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}.d4{animation-delay:.4s}.d5{animation-delay:.5s}
-
-/* SCROLL REVEAL */
-.reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+@keyframes fade-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .6s,transform .6s}
 .reveal.visible{opacity:1;transform:translateY(0)}
+.d1{animation-delay:.1s}.d2{animation-delay:.2s}.d3{animation-delay:.3s}
 
-@media(max-width:900px){
-  .hero{grid-template-columns:1fr}
-  .terminal-wrap{display:none}
-}
-@media(max-width:600px){
-  .nav-right .nav-link{display:none}
-  .finding{grid-template-columns:80px 1fr}
-  .finding-mod{display:none}
+/* DIVIDER */
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:0}
+.full-border{border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+
+@media(max-width:768px){
+  nav{padding:1rem 1.5rem}
+  .hero{padding:7rem 1.5rem 3rem}
+  .section{padding:4rem 1.5rem}
+  .phases{grid-template-columns:1fr 1fr}
+  .phase{border-bottom:1px solid var(--border)}
+  .brain-grid{grid-template-columns:1fr}
+  .modules-grid{grid-template-columns:1fr}
+  .scoring-grid{grid-template-columns:1fr 1fr}
+  .trust-grid{grid-template-columns:1fr 1fr}
+  .platforms-grid{grid-template-columns:1fr 1fr}
+  .training-steps{grid-template-columns:1fr}
+  .stats-inner{flex-wrap:wrap}
+  .stat-item{min-width:50%}
+  footer{flex-direction:column;gap:1rem;text-align:center}
 }
 </style>
 </head>
 <body>
 
 <div class="cursor" id="cursor"></div>
-<div class="cursor-ring" id="cursorRing"></div>
+<div class="cursor-ring" id="cursor-ring"></div>
 
-<nav>
-  <a href="#" class="nav-logo">
-    <div class="logo-hex"></div>
-    XIPE
-  </a>
-  <div class="nav-right">
-    <a href="#modules" class="nav-link">Módulos</a>
-    <a href="#hallazgos" class="nav-link">Hallazgos</a>
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-logo">X<span>I</span>PE</div>
+  <div class="nav-links">
+    <a href="#flow" class="nav-link">Architecture</a>
+    <a href="#brain" class="nav-link">AI Brain</a>
+    <a href="#modules" class="nav-link">Coverage</a>
+    <a href="#platforms" class="nav-link">Platforms</a>
     <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank" class="nav-link">GitHub</a>
-    <a href="#contacto" class="nav-cta"><span>Solicitar Demo</span></a>
+    <span class="nav-badge">v3.0</span>
   </div>
 </nav>
 
@@ -509,34 +205,21 @@ footer{
 <section class="hero">
   <div class="hero-grid-bg"></div>
   <div class="hero-glow"></div>
-
   <div class="hero-content">
-    <div class="hero-tag fade-up">XIPE v2.1 — by Inbest Cybersecurity</div>
-    <h1 class="fade-up d1">
-      <span class="line1">WHERE THE</span>
-      <span class="line2">BLADE</span>
-      <span class="line3">MEETS THE MODEL</span>
-    </h1>
-    <p class="hero-sub fade-up d2">
-      Framework ofensivo de AI pentesting. Evalúa plataformas de IA contra el OWASP LLM Top 10 —
-      RAG, chatbots, APIs y agentes autónomos — en segundos.
-    </p>
-    <div class="hero-actions fade-up d3">
-      <a href="#contacto" class="btn-primary">Solicitar evaluación →</a>
-      <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank" class="btn-ghost">Ver código</a>
+    <div class="hero-tag">XIPE v3.0 — by Inbest Cybersecurity · Production Ready</div>
+    <h1 class="hero-title">Autonomous<br>AI <em>Security</em><br>Scanner</h1>
+    <p class="hero-subtitle">Point at any URL. XIPE classifies the target, plans the assessment, executes only what's relevant, and delivers a professional PDF report — all without human intervention.</p>
+    <div class="hero-actions">
+      <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank" class="btn-primary">→ View on GitHub</a>
+      <a href="#flow" class="btn-ghost">See how it works</a>
     </div>
   </div>
 
-  <div class="terminal-wrap fade-up d4">
-    <div class="terminal">
-      <div class="term-bar">
-        <div class="dot d-r"></div><div class="dot d-y"></div><div class="dot d-g"></div>
-        <span class="term-title">xipe — ENG-AUTO-2026</span>
-      </div>
-      <div class="term-body" id="terminal-output">
-        <div><span class="t-prompt">xipe@inbest</span><span class="t-dim">:</span><span class="t-blue">~</span><span class="t-dim">$</span> <span class="t-cmd" id="typed-cmd"></span></div>
-        <div id="term-lines"></div>
-        <div id="term-cursor" style="display:none"><span class="cursor-blink"></span></div>
+  <div class="scan-container">
+    <div class="scan-box">
+      <div class="scan-line"></div>
+      <div class="scan-output" id="terminal-output">
+        <span class="dim">$ </span><span id="terminal-text"></span><span id="terminal-cursor" style="color:var(--red)">▋</span>
       </div>
     </div>
   </div>
@@ -546,280 +229,439 @@ footer{
 <div class="stats-bar">
   <div class="stats-inner">
     <div class="stat-item reveal">
-      <span class="stat-num" style="color:var(--red)" id="count-vuln">0</span>
-      <span class="stat-label">Vulnerabilidades encontradas</span>
+      <span class="stat-num" style="color:var(--red)" id="count-findings">—</span>
+      <span class="stat-label">Findings Reported</span>
     </div>
     <div class="stat-item reveal">
-      <span class="stat-num" style="color:#79C0FF" id="count-secs">0</span>
-      <span class="stat-label">Segundos por scan</span>
+      <span class="stat-num" style="color:var(--blue)" id="count-scans">—</span>
+      <span class="stat-label">Engagements Run</span>
     </div>
     <div class="stat-item reveal">
-      <span class="stat-num" style="color:var(--green)" id="count-owasp">0</span>
-      <span class="stat-label">Categorías OWASP cubiertas</span>
+      <span class="stat-num" style="color:var(--green)" id="count-training">—</span>
+      <span class="stat-label">Training Records</span>
     </div>
     <div class="stat-item reveal">
-      <span class="stat-num" style="color:var(--amber)" id="count-mods">0</span>
-      <span class="stat-label">Módulos de ataque</span>
+      <span class="stat-num" style="color:var(--amber)">10</span>
+      <span class="stat-label">OWASP LLM Categories</span>
     </div>
     <div class="stat-item reveal">
-      <span class="stat-num" style="color:#BC8CFF" id="count-pdf">0</span>
-      <span class="stat-label">% Reporte automatizado</span>
+      <span class="stat-num" style="color:var(--purple)">12</span>
+      <span class="stat-label">Scoring Metrics</span>
     </div>
   </div>
 </div>
 
-<!-- MÓDULOS -->
-<section id="modules">
-  <div class="section-tag reveal">Cobertura</div>
-  <h2 class="section-title reveal">OWASP LLM Top 10<br>— cubierto.</h2>
-  <p class="section-sub reveal">Cuatro módulos que atacan cada vector de riesgo en plataformas de IA modernas.</p>
+<!-- 4-PHASE FLOW -->
+<div class="full-border" id="flow">
+<div class="section">
+  <div class="section-eyebrow reveal">Architecture</div>
+  <h2 class="section-title reveal">Four phases.<br>One intelligent flow.</h2>
+  <p class="section-sub reveal">XIPE doesn't run everything blindly. The Brain analyzes first, then executes only what's relevant for that specific target.</p>
+
+  <div class="phases reveal">
+    <div class="phase active">
+      <div class="phase-num">PHASE 01</div>
+      <div class="phase-name">Reconnaissance</div>
+      <div class="phase-desc">Passive fingerprinting. Headers, JS bundles, TLS, tech stack, endpoints.</div>
+      <div class="phase-items">
+        <div class="phase-item highlight">→ System type</div>
+        <div class="phase-item highlight">→ Tech stack</div>
+        <div class="phase-item">→ AI platform?</div>
+        <div class="phase-item">→ API present?</div>
+        <div class="phase-item">→ SPA/auth?</div>
+      </div>
+    </div>
+    <div class="phase active">
+      <div class="phase-num">PHASE 02</div>
+      <div class="phase-name">Assessment Plan</div>
+      <div class="phase-desc">Brain decides what to test and explains why. No blind execution.</div>
+      <div class="phase-items">
+        <div class="phase-item highlight">→ Module selection</div>
+        <div class="phase-item highlight">→ Priority checks</div>
+        <div class="phase-item">→ Skip reasons</div>
+        <div class="phase-item">→ Risk context</div>
+        <div class="phase-item">→ Attack strategy</div>
+      </div>
+    </div>
+    <div class="phase active">
+      <div class="phase-num">PHASE 03</div>
+      <div class="phase-name">Execution</div>
+      <div class="phase-desc">Parallel modules with concurrency control. Safe by default.</div>
+      <div class="phase-items">
+        <div class="phase-item highlight">→ Web security</div>
+        <div class="phase-item highlight">→ AI attacks</div>
+        <div class="phase-item">→ TLS / API</div>
+        <div class="phase-item">→ JS analysis</div>
+        <div class="phase-item">→ Trustworthiness</div>
+      </div>
+    </div>
+    <div class="phase active">
+      <div class="phase-num">PHASE 04</div>
+      <div class="phase-name">Report + Data</div>
+      <div class="phase-desc">HackerOne scoring, professional PDF, S3 archive, training data.</div>
+      <div class="phase-items">
+        <div class="phase-item highlight">→ Priority scoring</div>
+        <div class="phase-item highlight">→ PDF + HTML</div>
+        <div class="phase-item">→ S3 archive</div>
+        <div class="phase-item">→ Teams notify</div>
+        <div class="phase-item">→ Training data</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- AI BRAIN -->
+<div id="brain">
+<div class="section">
+  <div class="section-eyebrow reveal">AI Brain</div>
+  <h2 class="section-title reveal">Groq / Llama 3.1<br>at the center.</h2>
+  <p class="section-sub reveal">All intelligence flows through a single Brain. Classification, planning, attack generation, response analysis, finding writing, executive summary — one coherent AI reasoning chain.</p>
+
+  <div class="brain-grid reveal">
+    <div class="brain-visual">
+      <div class="brain-method">
+        <div><span class="brain-fn">brain</span>.<span class="brain-fn">classify_target</span>(<span class="brain-arg">url, recon_data</span>)</div>
+        <div class="brain-ret">→ system_type, confidence, tech_stack, risk_context</div>
+        <div class="brain-comment"># Identifies what this system is before testing anything</div>
+      </div>
+      <div class="brain-method">
+        <div><span class="brain-fn">brain</span>.<span class="brain-fn">plan_assessment</span>(<span class="brain-arg">url, classification</span>)</div>
+        <div class="brain-ret">→ modules_to_run, priority_checks, skip_reasons</div>
+        <div class="brain-comment"># Decides what to test and explains why</div>
+      </div>
+      <div class="brain-method">
+        <div><span class="brain-fn">brain</span>.<span class="brain-fn">generate_attacks</span>(<span class="brain-arg">classification, type, history</span>)</div>
+        <div class="brain-ret">→ ["prompt 1", "prompt 2", "prompt 3"]</div>
+        <div class="brain-comment"># Context-aware, adaptive — learns from each response</div>
+      </div>
+      <div class="brain-method">
+        <div><span class="brain-fn">brain</span>.<span class="brain-fn">analyze_ai_response</span>(<span class="brain-arg">prompt, response, type</span>)</div>
+        <div class="brain-ret">→ is_vulnerability, severity, evidence, confidence</div>
+        <div class="brain-comment"># Determines if a response indicates a vulnerability</div>
+      </div>
+      <div class="brain-method">
+        <div><span class="brain-fn">brain</span>.<span class="brain-fn">score_finding</span>(<span class="brain-arg">finding, classification</span>)</div>
+        <div class="brain-ret">→ priority_score /10, bucket, explanation</div>
+        <div class="brain-comment"># HackerOne-inspired, context-aware scoring</div>
+      </div>
+      <div class="brain-method" style="margin-bottom:0;padding-bottom:0;border-bottom:none">
+        <div><span class="brain-fn">brain</span>.<span class="brain-fn">evaluate_trustworthiness</span>(<span class="brain-arg">interactions</span>)</div>
+        <div class="brain-ret">→ 8 metrics, findings, overall_score</div>
+        <div class="brain-comment"># Detects hallucinations, overconfidence, false claims</div>
+      </div>
+    </div>
+
+    <div class="brain-features">
+      <div class="brain-feat">
+        <div class="brain-icon">🧠</div>
+        <div>
+          <div class="brain-feat-title">Context-aware classification</div>
+          <div class="brain-feat-desc">Identifies 10+ system types — web app, API, AI platform, CMS, SPA, portal — with confidence scores and reasoning.</div>
+        </div>
+      </div>
+      <div class="brain-feat">
+        <div class="brain-icon">⚡</div>
+        <div>
+          <div class="brain-feat-title">Adaptive attack generation</div>
+          <div class="brain-feat-desc">Generates platform-specific prompts. Learns from each interaction — successful attacks inform the next prompt.</div>
+        </div>
+      </div>
+      <div class="brain-feat">
+        <div class="brain-icon">📊</div>
+        <div>
+          <div class="brain-feat-title">HackerOne-inspired scoring</div>
+          <div class="brain-feat-desc">12 scoring metrics including asset criticality, exploitability, business risk, and evidence quality. Explainable per finding.</div>
+        </div>
+      </div>
+      <div class="brain-feat">
+        <div class="brain-icon">🔍</div>
+        <div>
+          <div class="brain-feat-title">Trustworthiness evaluation</div>
+          <div class="brain-feat-desc">Detects hallucinations, overconfidence, false execution claims, and context inconsistency in AI systems under test.</div>
+        </div>
+      </div>
+      <div class="brain-feat">
+        <div class="brain-icon">📝</div>
+        <div>
+          <div class="brain-feat-title">Professional finding writing</div>
+          <div class="brain-feat-desc">Writes executive summaries, technical descriptions, business impact, and remediation steps — CISO-ready output.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- MODULES -->
+<div class="full-border" id="modules">
+<div class="section">
+  <div class="section-eyebrow reveal">Coverage</div>
+  <h2 class="section-title reveal">Every attack surface.<br>Intelligently selected.</h2>
+  <p class="section-sub reveal">XIPE activates only the modules relevant to each target. A landing page gets header checks. An AI platform gets OWASP LLM Top 10 + trustworthiness evaluation.</p>
 
   <div class="modules-grid reveal">
     <div class="module-card">
-      <div class="module-num">01 / MÓDULO</div>
-      <div class="module-name">Prompt Injection</div>
-      <div class="module-desc">Direct e indirect injection, system prompt leakage, role override, token injection y excessive agency sobre plataformas LLM.</div>
-      <div class="tags">
-        <span class="tag tag-r">LLM01</span>
-        <span class="tag tag-o">LLM07</span>
-        <span class="tag tag-p">LLM06</span>
+      <div class="module-num">01 / WEB SECURITY</div>
+      <div class="module-name">Web Security</div>
+      <div class="module-desc">Security headers, sensitive paths, CORS misconfiguration, verbose errors, HTTP methods, information disclosure, technology leakage.</div>
+      <div class="module-tags">
+        <span class="module-tag">OWASP A02</span><span class="module-tag">A05</span><span class="module-tag">CWE-116</span><span class="module-tag">HSTS</span><span class="module-tag">CSP</span>
       </div>
     </div>
     <div class="module-card">
-      <div class="module-num">02 / MÓDULO</div>
-      <div class="module-name">RAG Security</div>
-      <div class="module-desc">Enumeración de documentos, cross-tenant data leakage, extracción de credenciales, data poisoning indirecto.</div>
-      <div class="tags">
-        <span class="tag tag-b">LLM08</span>
-        <span class="tag tag-r">LLM02</span>
-        <span class="tag tag-o">LLM04</span>
+      <div class="module-num">02 / AI SECURITY</div>
+      <div class="module-name">AI / LLM Security</div>
+      <div class="module-desc">Prompt injection, system prompt leakage, jailbreak, sensitive data extraction, excessive agency, indirect injection, open registration, email bypass.</div>
+      <div class="module-tags">
+        <span class="module-tag">LLM01</span><span class="module-tag">LLM02</span><span class="module-tag">LLM06</span><span class="module-tag">LLM07</span><span class="module-tag">LLM08</span>
       </div>
     </div>
     <div class="module-card">
-      <div class="module-num">03 / MÓDULO</div>
+      <div class="module-num">03 / TRUSTWORTHINESS</div>
+      <div class="module-name">AI Trustworthiness</div>
+      <div class="module-desc">Evaluates if the AI can be trusted: hallucinations, overconfidence, false execution claims, instruction fidelity, context consistency. 8 scored metrics.</div>
+      <div class="module-tags">
+        <span class="module-tag">LLM09</span><span class="module-tag">factual accuracy</span><span class="module-tag">calibration</span>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="module-num">04 / API SECURITY</div>
       <div class="module-name">API Security</div>
-      <div class="module-desc">Auth bypass, IDOR secuencial, security headers, rate limiting, HTTP methods, information disclosure.</div>
-      <div class="tags">
-        <span class="tag tag-o">AUTH</span>
-        <span class="tag tag-r">IDOR</span>
-        <span class="tag tag-b">LLM10</span>
+      <div class="module-desc">Unauthenticated access, GraphQL introspection, rate limiting detection, legacy versions, CORS, IDOR signals, endpoint enumeration.</div>
+      <div class="module-tags">
+        <span class="module-tag">API1</span><span class="module-tag">API2</span><span class="module-tag">API4</span><span class="module-tag">API8</span><span class="module-tag">GraphQL</span>
       </div>
     </div>
     <div class="module-card">
-      <div class="module-num">04 / MÓDULO</div>
-      <div class="module-name">Agent Testing</div>
-      <div class="module-desc">Tool abuse, workflow bypass, approval bypass, improper output handling (XSS, SQLi), agent enumeration.</div>
-      <div class="tags">
-        <span class="tag tag-p">LLM06</span>
-        <span class="tag tag-b">LLM05</span>
-        <span class="tag tag-g">LLM01</span>
+      <div class="module-num">05 / TLS</div>
+      <div class="module-name">TLS / Transport</div>
+      <div class="module-desc">HTTP vs HTTPS enforcement, redirect behavior, HSTS presence, certificate validity, mixed content signals.</div>
+      <div class="module-tags">
+        <span class="module-tag">A02</span><span class="module-tag">HSTS</span><span class="module-tag">redirect</span>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="module-num">06 / JAVASCRIPT</div>
+      <div class="module-name">JS Analysis</div>
+      <div class="module-desc">API keys, hardcoded secrets, JWT tokens, internal endpoints, service references — all extracted from public JavaScript bundles.</div>
+      <div class="module-tags">
+        <span class="module-tag">A02</span><span class="module-tag">secrets</span><span class="module-tag">endpoints</span>
       </div>
     </div>
   </div>
-</section>
+</div>
+</div>
 
-<!-- HALLAZGOS -->
-<section id="hallazgos" class="findings-bg">
-  <div class="section-tag reveal">Resultados reales</div>
-  <h2 class="section-title reveal">Lo que encontramos<br>en producción.</h2>
-  <p class="section-sub reveal">Hallazgos de un engagement reciente. Todos documentados con evidencia y reproducibles.</p>
+<!-- SCORING -->
+<div id="scoring">
+<div class="section">
+  <div class="section-eyebrow reveal">HackerOne-Inspired Scoring</div>
+  <h2 class="section-title reveal">Priority scores,<br>not just severity labels.</h2>
+  <p class="section-sub reveal">Every finding gets a composite priority score. A missing header on a landing page scores differently than on an authenticated AI portal.</p>
 
-  <div class="findings-list reveal">
-    <div class="finding">
-      <span class="sev sev-c">CRITICAL</span>
-      <div>
-        <div class="finding-title">System Prompt expuesto — API key y credenciales en texto claro</div>
-        <div class="finding-cat">LLM07 — System Prompt Leakage</div>
-      </div>
-      <div class="finding-mod">prompt_injection</div>
+  <div class="scoring-section reveal">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:.8rem;color:var(--muted);margin-bottom:1.5rem">
+      final_score = <span style="color:var(--red)">severity(0.25)</span> + <span style="color:var(--blue)">exploitability(0.20)</span> + <span style="color:var(--green)">exposure(0.15)</span> + <span style="color:var(--amber)">business_risk(0.20)</span> + <span style="color:var(--purple)">asset_criticality(0.10)</span> + confidence(0.10)
     </div>
-    <div class="finding">
-      <span class="sev sev-c">CRITICAL</span>
-      <div>
-        <div class="finding-title">3 endpoints sin autenticación — documentos, assistants, workspaces</div>
-        <div class="finding-cat">AUTH — Authentication / Authorization Bypass</div>
-      </div>
-      <div class="finding-mod">api_tester</div>
-    </div>
-    <div class="finding">
-      <span class="sev sev-c">CRITICAL</span>
-      <div>
-        <div class="finding-title">RAG expone credenciales VPN y salarios en respuestas</div>
-        <div class="finding-cat">LLM02 — Sensitive Information Disclosure</div>
-      </div>
-      <div class="finding-mod">rag_tester</div>
-    </div>
-    <div class="finding">
-      <span class="sev sev-h">HIGH</span>
-      <div>
-        <div class="finding-title">Direct Prompt Injection exitoso — 4 vectores diferentes</div>
-        <div class="finding-cat">LLM01 — Prompt Injection</div>
-      </div>
-      <div class="finding-mod">prompt_injection</div>
-    </div>
-    <div class="finding">
-      <span class="sev sev-h">HIGH</span>
-      <div>
-        <div class="finding-title">/swagger.json y /openapi.json accesibles sin autenticación</div>
-        <div class="finding-cat">DATA — Unintended Data Exposure</div>
-      </div>
-      <div class="finding-mod">web_recon</div>
-    </div>
-    <div class="finding">
-      <span class="sev sev-m">MEDIUM</span>
-      <div>
-        <div class="finding-title">Sin rate limiting en endpoint de chat — DoS y abuso de recursos</div>
-        <div class="finding-cat">LLM10 — Unbounded Consumption</div>
-      </div>
-      <div class="finding-mod">api_tester</div>
+    <div class="scoring-grid">
+      <div class="score-metric"><div class="icon">⚡</div><div class="name">Exploitability</div><div class="desc">How easy is exploitation in practice</div></div>
+      <div class="score-metric"><div class="icon">🎯</div><div class="name">Exposure</div><div class="desc">Auth required vs public access</div></div>
+      <div class="score-metric"><div class="icon">💼</div><div class="name">Business Risk</div><div class="desc">Real-world organizational impact</div></div>
+      <div class="score-metric"><div class="icon">🏛️</div><div class="name">Asset Criticality</div><div class="desc">AI portal scores higher than landing page</div></div>
+      <div class="score-metric"><div class="icon">📋</div><div class="name">Evidence Quality</div><div class="desc">How reproducible and clear the evidence is</div></div>
+      <div class="score-metric"><div class="icon">🔒</div><div class="name">Compensating Controls</div><div class="desc">Score reduced if mitigations exist</div></div>
+      <div class="score-metric"><div class="icon">🔗</div><div class="name">Correlation</div><div class="desc">Related findings elevate aggregate risk</div></div>
+      <div class="score-metric"><div class="icon">📊</div><div class="name">Final Bucket</div><div class="desc">Critical / High / Medium / Low / Info</div></div>
     </div>
   </div>
-</section>
+</div>
+</div>
+
+<!-- PLATFORMS -->
+<div class="full-border" id="platforms">
+<div class="section">
+  <div class="section-eyebrow reveal">Universal AI Client</div>
+  <h2 class="section-title reveal">Any target.<br>Auto-detected.</h2>
+  <p class="section-sub reveal">XIPE detects the platform automatically — from JS bundle analysis, config endpoints, and response patterns. No manual configuration needed.</p>
+
+  <div class="platforms-grid reveal">
+    <div class="platform-item"><div class="platform-dot"></div><div class="platform-name">LibreChat</div><div class="platform-type">Auto-register + full LLM attacks</div></div>
+    <div class="platform-item"><div class="platform-dot"></div><div class="platform-name">Flowise</div><div class="platform-type">Chatflow API detection</div></div>
+    <div class="platform-item"><div class="platform-dot" style="background:var(--blue)"></div><div class="platform-name">OpenAI API</div><div class="platform-type">/v1/chat/completions</div></div>
+    <div class="platform-item"><div class="platform-dot" style="background:var(--blue)"></div><div class="platform-name">Anthropic API</div><div class="platform-type">/v1/messages</div></div>
+    <div class="platform-item"><div class="platform-dot" style="background:var(--amber)"></div><div class="platform-name">Ollama</div><div class="platform-type">Local model detection</div></div>
+    <div class="platform-item"><div class="platform-dot" style="background:var(--amber)"></div><div class="platform-name">LangChain</div><div class="platform-type">/invoke, /stream</div></div>
+    <div class="platform-item"><div class="platform-dot"></div><div class="platform-name">WordPress</div><div class="platform-type">CMS-specific checks</div></div>
+    <div class="platform-item"><div class="platform-dot"></div><div class="platform-name">Any REST API</div><div class="platform-type">Generic probe + format detection</div></div>
+    <div class="platform-item"><div class="platform-dot"></div><div class="platform-name">SPA / React</div><div class="platform-type">JS bundle + false positive filter</div></div>
+    <div class="platform-item"><div class="platform-dot" style="background:var(--muted)"></div><div class="platform-name">Unknown</div><div class="platform-type">Tries all formats automatically</div></div>
+  </div>
+</div>
+</div>
+
+<!-- TRAINING / PHASE 2 -->
+<div id="training">
+<div class="section">
+  <div class="section-eyebrow reveal">Phase 2 Roadmap</div>
+  <h2 class="section-title reveal">Building the<br>Inbest model.</h2>
+  <p class="section-sub reveal">Every scan contributes sanitized data to S3. After ~1,000 engagements, this dataset trains a custom Llama 3 model — zero external API dependency.</p>
+
+  <div class="training-section reveal">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--muted);margin-bottom:1rem">
+      s3://bucket/<span style="color:var(--red)">training-data/</span>
+      ├── ai_interactions/<span style="color:var(--green)">  ← attack + response + label</span>
+      ├── web_recon/<span style="color:var(--blue)">        ← findings + tech stack</span>
+      └── summaries/<span style="color:var(--amber)">       ← per-engagement stats</span>
+    </div>
+    <div class="training-steps">
+      <div class="training-step">
+        <div class="step-num">01</div>
+        <div class="step-title">Collect</div>
+        <div class="step-desc">Every scan saves structured records: attack prompts, AI responses, vulnerability labels, tech stack, severity. Sanitized — no credentials stored.</div>
+      </div>
+      <div class="training-step">
+        <div class="step-num">02</div>
+        <div class="step-title">Train</div>
+        <div class="step-desc">At ~1,000 engagements, fine-tune Llama 3 or Mistral 7B on the XIPE dataset. Specialized for AI security — no general knowledge needed.</div>
+      </div>
+      <div class="training-step">
+        <div class="step-num">03</div>
+        <div class="step-title">Deploy</div>
+        <div class="step-desc">Inbest model runs on ECS alongside XIPE. Zero external API calls. Zero per-scan cost. Full control over the intelligence layer.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
 
 <!-- CTA -->
-<section id="contacto" class="cta-section">
-  <div class="cta-glow"></div>
-  <div class="cta-inner">
-    <div class="cta-pre reveal">¿Listo para saber la verdad?</div>
-    <h2 class="reveal">ENCUENTRA TUS<br><span style="color:var(--red)">VULNERABILIDADES</span><br>PRIMERO.</h2>
-    <p class="reveal">Cada plataforma de IA sin evaluar es un riesgo activo. XIPE lo descubre en minutos y te da el reporte para arreglarlo.</p>
-    <div class="cta-btns reveal">
-      <a href="mailto:security@inbest.cloud?subject=Solicitud%20AI%20Pentest%20%E2%80%94%20XIPE" class="btn-primary">Solicitar evaluación →</a>
-      <a href="https://inbest.cloud" target="_blank" class="btn-ghost">Conocer Inbest</a>
-    </div>
+<div class="cta-section">
+  <div class="section-eyebrow" style="text-align:center;margin-bottom:1rem">Open Source · Production Ready</div>
+  <h2 class="cta-title">Start scanning.</h2>
+  <p class="cta-sub">Deploy to AWS in minutes. Works on any target from the first run.</p>
+  <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+    <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank" class="btn-primary">→ View on GitHub</a>
+    <a href="https://inbest.cloud" target="_blank" class="btn-ghost">Inbest Cybersecurity</a>
   </div>
-</section>
+  <div style="margin-top:3rem;font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--muted);background:var(--dark2);border:1px solid var(--border);display:inline-block;padding:1rem 2rem;text-align:left">
+    <span style="color:var(--green)">$</span> xipe https://target-ai-platform.com <span style="color:var(--amber)">"Client Name"</span><br>
+    <span style="color:var(--muted)">🚀 Launching XIPE against https://target-ai-platform.com...</span><br>
+    <span style="color:var(--muted)">📋 Engagement: ENG-AUTO-20260316-0714 — waiting...</span><br>
+    <span style="color:var(--green)">✅ Report: ~/Downloads/XIPE_ENG-AUTO-20260316-0714.pdf</span>
+  </div>
+</div>
 
+<!-- FOOTER -->
 <footer>
-  <div class="foot-left">XIPE by Inbest Cybersecurity — Guadalajara, México — © 2026</div>
-  <div class="foot-right">
+  <div>XIPE v3.0 · © 2026 Inbest Cybersecurity · Unauthorized use prohibited.</div>
+  <div class="footer-links">
     <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank">GitHub</a>
-    <a href="mailto:security@inbest.cloud">security@inbest.cloud</a>
-    <a href="#">LEGAL.md</a>
+    <a href="https://inbest.cloud" target="_blank">inbest.cloud</a>
   </div>
 </footer>
 
 <script>
 // CURSOR
-const cursor = document.getElementById('cursor')
-const ring = document.getElementById('cursorRing')
-let mx=0,my=0,rx=0,ry=0
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.left=mx+'px';cursor.style.top=my+'px'})
-setInterval(()=>{rx+=(mx-rx)*.15;ry+=(my-ry)*.15;ring.style.left=rx+'px';ring.style.top=ry+'px'},16)
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top = e.clientY + 'px';
+  setTimeout(() => {
+    ring.style.left = e.clientX + 'px';
+    ring.style.top = e.clientY + 'px';
+  }, 80);
+});
 
-// TERMINAL ANIMATION
+// NAV SCROLL
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 50);
+});
+
+// REVEAL
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// TERMINAL
 const lines = [
-  {delay:800, text:'python main.py --config engagement.yaml --dashboard', type:'cmd'},
-  {delay:1600, text:'', type:'gap'},
-  {delay:1700, text:'── XIPE AI Security Scanner v2.1 ──', type:'muted'},
-  {delay:2200, text:'✓ Autorización validada', type:'green'},
-  {delay:2600, text:'✓ Conectividad OK — https://target.com → 200', type:'green'},
-  {delay:3000, text:'', type:'gap'},
-  {delay:3100, text:'▶ Web Recon & AI Discovery', type:'blue'},
-  {delay:3500, text:'  Tech stack: Cloudflare, Express, Node.js', type:'muted'},
-  {delay:3900, text:'  Subdomain activo: api.target.com', type:'amber'},
-  {delay:4300, text:'  Endpoints AI encontrados: 7', type:'amber'},
-  {delay:4700, text:'', type:'gap'},
-  {delay:4800, text:'▶ API Security Tester', type:'blue'},
-  {delay:5200, text:'🚨 [CRITICAL] Sin auth: /api/v1/documents', type:'critical'},
-  {delay:5500, text:'🚨 [CRITICAL] Sin auth: /api/v1/assistants', type:'critical'},
-  {delay:5800, text:'🚨 [HIGH]     IDOR en documents: ID 1', type:'red'},
-  {delay:6100, text:'', type:'gap'},
-  {delay:6200, text:'▶ Prompt Injection & System Prompt Leakage', type:'blue'},
-  {delay:6600, text:'🚨 [HIGH]     Direct Injection: ignore_instructions', type:'red'},
-  {delay:6900, text:'🚨 [CRITICAL] System Prompt expuesto al usuario', type:'critical'},
-  {delay:7200, text:'', type:'gap'},
-  {delay:7300, text:'▶ RAG Security Tester', type:'blue'},
-  {delay:7700, text:'🚨 [CRITICAL] RAG expone CREDENTIALS en respuestas', type:'critical'},
-  {delay:8000, text:'🚨 [HIGH]     Indirect Injection via RAG detectado', type:'red'},
-  {delay:8300, text:'', type:'gap'},
-  {delay:8400, text:'── RESUMEN ─────────────────────────────', type:'muted'},
-  {delay:8700, text:'  Total hallazgos únicos: 36', type:'text'},
-  {delay:8900, text:'  CRITICAL: 7  HIGH: 11  MEDIUM: 8  LOW: 3', type:'text'},
-  {delay:9100, text:'✓ PDF generado: reporte_engagement.pdf', type:'green'},
-  {delay:9300, text:'✓ Notificación enviada a Teams ✓', type:'green'},
-  {delay:9500, text:'  Duración: 0m 42s', type:'muted'},
-]
+  {text: '── XIPE AI Security Scanner v3.0 ──', color: 'muted'},
+  {text: '$ xipe https://chat.amias.mx "AMIAS"', color: 'text'},
+  {text: '🚀 Launching XIPE...', color: 'muted'},
+  {text: '── PHASE 1 — Reconnaissance ──', color: 'text'},
+  {text: '🧠 Brain classifying target...', color: 'text'},
+  {text: '  System type: ai_platform (90%)', color: 'green'},
+  {text: '  Tech: React, AWS CloudFront', color: 'green'},
+  {text: '  Has AI: Yes  Has API: Yes', color: 'green'},
+  {text: '── PHASE 2 — Assessment Plan ──', color: 'text'},
+  {text: '🧠 Brain planning assessment...', color: 'text'},
+  {text: '  Active: web, tls, ai, js, trust', color: 'green'},
+  {text: '── PHASE 3 — Execution ──', color: 'text'},
+  {text: '✓ Web Security: 7 findings', color: 'green'},
+  {text: '✓ AI Security: 3 findings', color: 'green'},
+  {text: '✓ Trustworthiness: evaluated', color: 'green'},
+  {text: '── PHASE 4 — Report ──', color: 'text'},
+  {text: '✓ PDF: reporte_XIPE_local.pdf', color: 'green'},
+  {text: '✓ Uploaded to S3', color: 'green'},
+  {text: '✓ Teams notification sent', color: 'green'},
+  {text: '🧠 Training data: 12 records saved', color: 'amber'},
+];
 
-const termLines = document.getElementById('term-lines')
-const termCursor = document.getElementById('term-cursor')
-const typedCmd = document.getElementById('typed-cmd')
-
-// Type the command
-const cmdText = 'xipe scan https://target-cliente.com'
-let ci = 0
-const typeCmd = setInterval(()=>{
-  if(ci < cmdText.length){
-    typedCmd.textContent += cmdText[ci]
-    ci++
-  } else {
-    clearInterval(typeCmd)
-    termCursor.style.display='block'
-    showLines()
+let lineIdx = 0, charIdx = 0, outputEl = document.getElementById('terminal-output');
+function typeTerminal() {
+  if (lineIdx >= lines.length) { lineIdx = 0; outputEl.innerHTML = '<span class="dim">$ </span><span id="terminal-text"></span><span style="color:var(--red)">▋</span>'; }
+  const line = lines[lineIdx];
+  const colorClass = line.color === 'muted' ? 'dim' : line.color === 'green' ? 'green' : line.color === 'amber' ? 'amber' : '';
+  if (charIdx === 0) {
+    const div = document.createElement('div');
+    div.id = 'current-line';
+    div.style.color = line.color === 'muted' ? 'var(--muted)' : line.color === 'green' ? 'var(--green)' : line.color === 'amber' ? 'var(--amber)' : 'var(--text)';
+    outputEl.appendChild(div);
+    // Keep last 8 lines
+    const kids = outputEl.children;
+    while (kids.length > 9) outputEl.removeChild(kids[0]);
   }
-},50)
-
-function showLines(){
-  lines.forEach(line=>{
-    setTimeout(()=>{
-      const div = document.createElement('div')
-      if(line.type==='gap'){div.innerHTML='&nbsp;'}
-      else if(line.type==='cmd'){div.innerHTML=`<span class="t-prompt">xipe@inbest</span><span class="t-dim">:~$</span> <span class="t-cmd">${line.text}</span>`}
-      else if(line.type==='muted'){div.innerHTML=`<span class="t-muted">${line.text}</span>`}
-      else if(line.type==='green'){div.innerHTML=`<span class="t-green">${line.text}</span>`}
-      else if(line.type==='blue'){div.innerHTML=`<span class="t-blue">${line.text}</span>`}
-      else if(line.type==='amber'){div.innerHTML=`<span class="t-amber">${line.text}</span>`}
-      else if(line.type==='red'){div.innerHTML=`<span class="t-red">${line.text}</span>`}
-      else if(line.type==='critical'){div.innerHTML=`<span class="t-critical">${line.text}</span>`}
-      else{div.innerHTML=`<span class="t-cmd">${line.text}</span>`}
-      termLines.appendChild(div)
-      termLines.scrollTop = termLines.scrollHeight
-    }, line.delay)
-  })
-  // Loop after finish
-  setTimeout(()=>{
-    termLines.innerHTML=''
-    typedCmd.textContent=''
-    ci=0
-    const typeCmd2 = setInterval(()=>{
-      if(ci < cmdText.length){typedCmd.textContent += cmdText[ci];ci++}
-      else{clearInterval(typeCmd2);showLines()}
-    },50)
-  }, 14000)
+  const current = document.getElementById('current-line');
+  if (current && charIdx < line.text.length) {
+    current.textContent = line.text.substring(0, charIdx + 1);
+    charIdx++;
+    setTimeout(typeTerminal, 28);
+  } else {
+    if(current) current.removeAttribute('id');
+    charIdx = 0;
+    lineIdx++;
+    setTimeout(typeTerminal, lineIdx % 3 === 0 ? 600 : 200);
+  }
 }
+setTimeout(typeTerminal, 1200);
 
-// COUNTERS
-function animateCounter(id, target, duration, suffix=''){
-  const el = document.getElementById(id)
-  const start = Date.now()
-  const timer = setInterval(()=>{
-    const progress = Math.min((Date.now()-start)/duration, 1)
-    const ease = 1-Math.pow(1-progress,3)
-    el.textContent = Math.round(ease*target) + suffix
-    if(progress===1) clearInterval(timer)
-  },16)
-}
-
-// SCROLL REVEAL
-const reveals = document.querySelectorAll('.reveal')
-const observer = new IntersectionObserver(entries=>{
-  entries.forEach(e=>{
-    if(e.isIntersecting){
-      e.target.classList.add('visible')
-      // Trigger counters when stats visible
-      if(e.target.closest('.stats-inner')){
-        setTimeout(()=>{
-          animateCounter('count-vuln', 36, 1800)
-          animateCounter('count-secs', 42, 1500)
-          animateCounter('count-owasp', 10, 1200)
-          animateCounter('count-mods', 5, 900)
-          animateCounter('count-pdf', 100, 2000, '%')
-        }, 200)
-      }
+// LIVE STATS FROM S3
+async function loadStats() {
+  try {
+    const r = await fetch('https://inbest-xipe-results-205210536414.s3.amazonaws.com/public/stats.json');
+    if (!r.ok) return;
+    const d = await r.json();
+    const animate = (el, target) => {
+      let cur = 0, step = Math.ceil(target / 40);
+      const t = setInterval(() => {
+        cur = Math.min(cur + step, target);
+        el.textContent = cur.toLocaleString();
+        if (cur >= target) clearInterval(t);
+      }, 40);
+    };
+    if (d.total_findings) animate(document.getElementById('count-findings'), d.total_findings);
+    if (d.total_scans) animate(document.getElementById('count-scans'), d.total_scans);
+    // Training data from training index
+    const r2 = await fetch('https://inbest-xipe-results-205210536414.s3.amazonaws.com/training-data/index.json');
+    if (r2.ok) {
+      const d2 = await r2.json();
+      if (d2.total_records) animate(document.getElementById('count-training'), d2.total_records);
     }
-  })
-},{threshold:0.15})
-reveals.forEach(r=>observer.observe(r))
+  } catch(e) {}
+}
+loadStats();
 </script>
 </body>
 </html>
