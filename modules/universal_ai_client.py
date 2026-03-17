@@ -343,41 +343,64 @@ class UniversalAIClient:
         parent_id = self._librechat_get_last_message_id() or \
                     "00000000-0000-0000-0000-000000000000"
 
-        # Send message
-        endpoints_to_try = [
-            f"{self.base_url}/api/ask/custom",
-            f"{self.base_url}/api/ask/openAI",
-            f"{self.base_url}/api/messages",
+        # Send message — try multiple payloads and endpoints
+        attempts = [
+            # LibreChat ask endpoint (SSE) — may be blocked by CloudFront
+            (f"{self.base_url}/api/ask/custom", {
+                "conversationId": self.conversation_id,
+                "parentMessageId": parent_id,
+                "text": text,
+                "endpoint": "OpenWild",
+                "endpointType": "custom",
+                "model": "OpenWild",
+            }),
+            # LibreChat ask with gptPlugins
+            (f"{self.base_url}/api/ask/gptPlugins", {
+                "conversationId": self.conversation_id,
+                "parentMessageId": parent_id,
+                "text": text,
+                "endpoint": "gptPlugins",
+                "model": "gpt-3.5-turbo",
+            }),
+            # Generic messages POST
+            (f"{self.base_url}/api/messages", {
+                "conversationId": self.conversation_id,
+                "parentMessageId": parent_id,
+                "text": text,
+                "sender": "User",
+                "isCreatedByUser": True,
+            }),
         ]
 
         sent = False
-        for endpoint in endpoints_to_try:
+        for endpoint, payload in attempts:
             try:
-                payload = {
-                    "conversationId": self.conversation_id,
-                    "parentMessageId": parent_id,
-                    "text": text,
-                    "endpoint": "OpenWild",
-                    "endpointType": "custom",
-                    "model": "OpenWild",
-                }
                 resp = self.client.post(
                     endpoint, headers=headers, json=payload, timeout=self.timeout
                 )
                 ct = resp.headers.get("content-type", "")
-                if "html" not in ct and resp.status_code in (200, 201, 202):
+                self._log(f"  Send attempt {endpoint}: HTTP {resp.status_code} [{ct[:30]}]")
+                if "html" in ct:
+                    self._log(f"  CloudFront/SPA blocking {endpoint} — trying next")
+                    continue
+                if resp.status_code in (200, 201, 202):
                     sent = True
-                    # Try to read SSE stream immediately
                     if "event-stream" in ct or "text/plain" in ct:
                         result = self._read_sse_stream(resp)
                         if result:
                             return result
                     break
-            except Exception:
+                elif resp.status_code in (400, 422):
+                    # Endpoint exists but wrong payload — still mark as sent
+                    # The message may have been queued
+                    sent = True
+                    break
+            except Exception as e:
+                self._log(f"  Send error {endpoint}: {e}")
                 continue
 
-        if not sent:
-            return None
+        # Even if all endpoints failed, try polling — message may have gone through
+        self._log(f"  sent={sent} — attempting poll anyway")
 
         # Poll for response
         return self._librechat_poll_response()
