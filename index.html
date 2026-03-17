@@ -134,13 +134,22 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
 .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s,transform .6s}
 .reveal.visible{opacity:1;transform:translateY(0)}
 @media(max-width:768px){
-  nav{padding:1rem 1.5rem}.nav-links{gap:1rem}
-  .hero{padding:7rem 1.5rem 18rem}
-  .section{padding:4rem 1.5rem}
+  nav{padding:1rem 1.5rem}
+  .nav-links{gap:.8rem}
+  .nav-link:not(:first-child):not(:last-child){display:none}
+  .hero{padding:6rem 1.5rem 20rem;min-height:auto}
+  .hero-title{font-size:clamp(3rem,14vw,5rem)}
+  .hero-subtitle{font-size:.95rem}
+  .section{padding:3.5rem 1.5rem}
   .phases,.modules-grid,.scoring-grid,.platforms-grid,.training-steps,.brain-grid{grid-template-columns:1fr}
-  .stats-inner{flex-wrap:wrap}.stat-item{min-width:50%}
-  .scan-container{width:92vw;bottom:1.5rem}
+  .stats-inner{flex-wrap:wrap}.stat-item{min-width:50%;border-bottom:1px solid var(--border)}
+  .scan-container{width:92vw;bottom:1rem;left:50%;transform:translateX(-50%)}
+  .scan-box{font-size:.65rem;padding:1rem}
   footer{flex-direction:column;gap:1rem;text-align:center}
+  .chain-step{flex-direction:column;gap:.8rem}
+  .chain-num{font-size:1.5rem}
+  .hero-actions{flex-direction:column;align-items:center}
+  .btn-primary,.btn-ghost{width:100%;max-width:280px;justify-content:center}
 }
 </style>
 </head>
