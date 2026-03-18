@@ -61,7 +61,7 @@ def update_stats(s3_bucket: str, region: str, findings: list, engagement_id: str
         Key=STATS_KEY,
         Body=json.dumps(stats),
         ContentType="application/json",
-        ACL="public-read",
+
         CacheControl="max-age=60",
     )
 
