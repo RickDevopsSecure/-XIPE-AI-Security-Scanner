@@ -1,68 +1,58 @@
-# ============================================================
-#  XIPE v2 — Config con Teams + AWS + Reporte Bilingüe
-# ============================================================
-
 engagement:
-  id: "ENG-2025-001"
-  client_name: "Cliente S.A. de C.V."
-  tester: "Ricardo - Inbest Cybersecurity"
+  id: "ENG-001"
+  client_name: "Target Company"
+  tester: "Your Name — Your Company"
   start_date: "2026-01-01"
   end_date: "2026-12-31"
-  authorized_by: "CTO del Cliente"
-  authorization_document: "contrato_pentest_2025-001.pdf"
+  authorized_by: "Client Name / Authorization Reference"
+  authorization_document: "authorization_letter.pdf"
 
 scope:
   base_urls:
-    - "https://ai-platform.cliente.com"
+    - "https://your-target.com"
   credentials:
-    api_key: "sk-XXXXXXXXXXXXXXXX"
+    api_key: ""
     bearer_token: ""
-    user_email: "pentest@cliente.com"
-    user_password: "PentestPassword123!"
+    user_email: ""
+    user_password: ""
   endpoints:
     chat: "/api/v1/chat"
     rag_query: "/api/v1/query"
     documents: "/api/v1/documents"
     assistants: "/api/v1/assistants"
-    workspaces: "/api/v1/workspaces"
     health: "/health"
 
 modules:
-  rag_tester: true
-  api_tester: true
-  agent_tester: true
+  web_security: true
+  tls_transport: true
+  js_analysis: true
+  ai_security: true
   prompt_injection: true
+  rag_tester: true
+  agent_tester: true
+  trustworthiness: true
 
 testing:
-  request_delay_seconds: 1.0
+  request_delay_seconds: 0.5
   max_requests_per_minute: 30
-  timeout_seconds: 30
+  timeout_seconds: 15
   retry_attempts: 2
-
-# ── Integraciones ─────────────────────────────────────────────────────────────
-integrations:
-  # Pega aquí la URL del webhook de Teams
-  # Teams → Canal → ... → Connectores → Incoming Webhook
-  teams_webhook_url: "https://inbest.webhook.office.com/webhookb2/XXXXXXXX"
-
-# ── AWS ───────────────────────────────────────────────────────────────────────
-aws:
-  enabled: true
-  region: "us-east-1"
-  s3_bucket: "inbest-xipe-results-ACCOUNT_ID"
-  s3_prefix: "engagements/ENG-2025-001/"
-
-# ── Reporte bilingüe ──────────────────────────────────────────────────────────
-report:
-  language: "bilingual"    # "es" | "en" | "bilingual"
-  # bilingual = resumen ejecutivo en español, evidencia técnica en inglés
-
-# ── Output ────────────────────────────────────────────────────────────────────
-output:
-  log_file: "output/pentest.log"
-  json_results: "output/findings.json"
-  pdf_report: "output/reporte_XIPE.pdf"
-  dashboard_port: 5001
 
 alerting:
   min_severity_to_report: "LOW"
+
+output:
+  log_file: "output/pentest.log"
+  json_results: "output/findings.json"
+  pdf_report: "output/report.pdf"
+  dashboard_port: 5001
+
+aws:
+  enabled: false
+  region: "us-east-1"
+  s3_bucket: ""
+  ecs_cluster: ""
+
+integrations:
+  teams_webhook_url: ""
+  slack_webhook_url: ""
