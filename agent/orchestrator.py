@@ -64,19 +64,6 @@ class PentestOrchestrator:
         )
         self.teams = TeamsNotifier(webhook) if webhook else None
 
-        # Update public stats for landing page
-        if self.config.get("aws", {}).get("enabled") and self.config.get("aws", {}).get("s3_bucket"):
-            try:
-                update_stats(
-                    s3_bucket=self.config["aws"]["s3_bucket"],
-                    region=self.config["aws"].get("region", "us-east-1"),
-                    findings=[f.to_dict() for f in deduplicated],
-                    engagement_id=self.engagement_id,
-                )
-                self.logger.success("Stats updated in S3")
-            except Exception as e:
-                self.logger.error(f"Stats update error: {e}")
-
         # Training data collector
         aws = self.config.get("aws", {})
         self.training = None
