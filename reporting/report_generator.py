@@ -163,7 +163,7 @@ class ReportGenerator:
 
 <!-- COVER -->
 <div class="cover">
-  <div class="cover-logo">Inbest Cybersecurity · XIPE v3.0</div>
+  <div class="cover-logo">{eng.get('company', eng.get('tester', 'NullGhost Security').split(' - ')[-1] if ' - ' in eng.get('tester','') else eng.get('tester','NullGhost Security'))} · XIPE v3.1</div>
   <div class="cover-title">Security Assessment<br><span>Report</span></div>
   <div class="cover-subtitle">{eng.get('client_name', 'Client')} · {self.eng_id}</div>
   <div class="cover-meta">
@@ -181,7 +181,7 @@ class ReportGenerator:
     </div>
     <div class="cover-meta-item">
       <label>Lead Tester</label>
-      <span>{eng.get('tester', 'Inbest Cybersecurity')}</span>
+      <span>{eng.get('tester', 'NullGhost Security')}</span>
     </div>
     <div class="cover-meta-item">
       <label>Authorized By</label>

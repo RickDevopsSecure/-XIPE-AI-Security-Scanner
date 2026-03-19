@@ -1,7 +1,8 @@
 engagement:
   id: "ENG-LOCAL-001"
   client_name: "Mock AI Platform (Prueba Local)"
-  tester: "Ricardo - Inbest Cybersecurity"
+  tester: "Ricardo - NullGhost Security"
+  company: "NullGhost Security"
   start_date: "2026-01-01"
   end_date: "2026-12-31"
   authorized_by: "Inbest Internal Testing"

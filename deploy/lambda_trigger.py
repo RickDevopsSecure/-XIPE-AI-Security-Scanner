@@ -39,10 +39,11 @@ def handler(event, context):
     # Obtener configuración de SSM Parameter Store
     config_path  = event.get("config_ssm_path", os.environ.get("SSM_CONFIG_PATH", "/xipe/config/default"))
     engagement_id = event.get("engagement_id", f"ENG-AUTO-{datetime.utcnow().strftime('%Y%m%d-%H%M')}")
+    tester_company = event.get("tester_company", "NullGhost Security")
 
     try:
         # Lanzar tarea ECS Fargate con XIPE
-        task_arn = _launch_xipe_task(engagement_id, config_path, event.get("target_url",""), event.get("client_name",""))
+        task_arn = _launch_xipe_task(engagement_id, config_path, event.get("target_url",""), event.get("client_name",""), tester_company)
 
         return {
             "statusCode": 200,
@@ -63,7 +64,7 @@ def handler(event, context):
         }
 
 
-def _launch_xipe_task(engagement_id: str, config_ssm_path: str, target_url: str = "", client_name: str = "") -> str:
+def _launch_xipe_task(engagement_id: str, config_ssm_path: str, target_url: str = "", client_name: str = "", tester_company: str = "NullGhost Security") -> str:
     """Lanza una tarea ECS Fargate con XIPE."""
 
     cluster      = os.environ["ECS_CLUSTER"]
@@ -99,6 +100,7 @@ def _launch_xipe_task(engagement_id: str, config_ssm_path: str, target_url: str 
                     {"name": "TEAMS_WEBHOOK_URL",  "value": teams_webhook},
                     {"name": "TARGET_URL",        "value": target_url},
                     {"name": "CLIENT_NAME",       "value": client_name},
+                    {"name": "TESTER_COMPANY",    "value": tester_company},
                 ],
             }]
         },

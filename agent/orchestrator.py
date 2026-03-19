@@ -608,6 +608,8 @@ class PentestOrchestrator:
             self.config["scope"]["base_urls"] = [os.environ["TARGET_URL"]]
         if os.environ.get("CLIENT_NAME"):
             self.config["engagement"]["client_name"] = os.environ["CLIENT_NAME"]
+        if os.environ.get("TESTER_COMPANY"):
+            self.config["engagement"]["company"] = os.environ["TESTER_COMPANY"]
         if os.environ.get("S3_BUCKET"):
             self.config.setdefault("aws", {})["enabled"] = True
             self.config["aws"]["s3_bucket"] = os.environ["S3_BUCKET"]
