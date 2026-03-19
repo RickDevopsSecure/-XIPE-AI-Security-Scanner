@@ -74,6 +74,7 @@ class PentestOrchestrator:
             )
 
         self.all_findings: List[Finding] = []
+        self.exploit_results: List[Dict] = []
         self.classification: Dict = {}
         self.assessment_plan: Dict = {}
         self.ai_interactions: List[Dict] = []
@@ -105,6 +106,22 @@ class PentestOrchestrator:
         # ── PHASE 3: EXECUTION ───────────────────────────────────────────────
         self.logger.section("PHASE 3 — Execution")
         self._run_modules_parallel()
+
+        # ── PHASE 3.5: BRAIN-DRIVEN EXPLOITATION ────────────────────────────
+        self.logger.section("PHASE 3.5 — Brain-Driven Exploitation")
+        try:
+            from modules.exploit_engine import ExploitEngine
+            exploit_engine = ExploitEngine(
+                target_url=self.config["scope"]["base_urls"][0],
+                logger=self.logger
+            )
+            findings_dicts = [f.to_dict() for f in self.all_findings]
+            self.exploit_results = exploit_engine.run_exploits(findings_dicts)
+            confirmed = sum(1 for r in self.exploit_results if r.get("confirmed"))
+            self.logger.info(f"Exploit phase complete: {len(self.exploit_results)} tested, {confirmed} confirmed")
+        except Exception as e:
+            self.logger.error(f"Exploit engine error: {e}")
+            self.exploit_results = []
 
         # ── PHASE 4: SCORING + REPORT ────────────────────────────────────────
         self.logger.section("PHASE 4 — Scoring & Report")
@@ -386,6 +403,7 @@ class PentestOrchestrator:
             },
             "findings": [f.to_dict() for f in deduplicated],
             "trustworthiness": trustworthiness,
+            "exploit_results": self.exploit_results,
         }
 
         output_dir = Path(self.config["output"]["json_results"]).parent

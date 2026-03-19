@@ -65,6 +65,8 @@ class ReportGenerator:
         duration = execution.get("duration_seconds", 0)
 
         findings_html = self._render_findings(findings)
+        exploit_results = self.assessment.get("exploit_results", [])
+        exploit_html = self._render_exploits(exploit_results)
         trust_html = self._render_trustworthiness(trust) if trust else ""
         coverage_html = self._render_coverage(plan)
 
@@ -238,10 +240,13 @@ class ReportGenerator:
   <!-- AI TRUSTWORTHINESS -->
   {trust_html}
 
+  <!-- EXPLOIT RESULTS -->
+  {exploit_html}
+
 </div>
 
 <div class="footer">
-  <strong>XIPE v3.0 · Inbest Cybersecurity</strong> · Engagement {self.eng_id}<br>
+  <strong>XIPE v3.1 · NullGhost Security</strong> · Engagement {self.eng_id}<br>
   This report is confidential and intended exclusively for the authorized recipient.<br>
   Generated {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
 </div>
@@ -297,6 +302,48 @@ class ReportGenerator:
 </div>""")
 
         return "\n".join(html_parts)
+
+
+    def _render_exploits(self, exploit_results: List[Dict]) -> str:
+        if not exploit_results:
+            return ""
+
+        confirmed = sum(1 for r in exploit_results if r.get("confirmed"))
+        parts = [f"""
+  <div class="section">
+    <div class="section-title">Exploitation Results ({len(exploit_results)} tested, {confirmed} confirmed)</div>
+    <p style="color:#6b7280;font-size:13px;margin-bottom:16px;">
+      Brain-directed active exploitation attempts on identified findings.
+      Only safe, non-destructive proof-of-concept tests were executed.
+    </p>"""]
+
+        for r in exploit_results:
+            confirmed_flag = r.get("confirmed", False)
+            color = "#dc2626" if confirmed_flag else "#16a34a"
+            status = "CONFIRMED" if confirmed_flag else "NOT CONFIRMED"
+            result = r.get("result", {})
+            parts.append(f"""
+    <div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:12px;border-left:4px solid {color}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong style="font-size:14px">{r.get("finding_title","")}</strong>
+        <span style="background:{color};color:white;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600">{status}</span>
+      </div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:6px">
+        <strong>Exploit type:</strong> {r.get("exploit_type","").replace("_"," ").title()}
+      </div>
+      <div style="font-size:12px;color:#374151;margin-bottom:6px">
+        <strong>Brain decision:</strong> {r.get("brain_decision","")}
+      </div>
+      <div style="font-size:12px;color:#374151;margin-bottom:6px">
+        <strong>Evidence:</strong> {result.get("evidence","N/A")}
+      </div>
+      <div style="background:#f9fafb;border-radius:4px;padding:10px;font-family:monospace;font-size:11px;color:#1f2937">
+        {result.get("poc","").replace(chr(10),"<br>")}
+      </div>
+    </div>""")
+
+        parts.append("  </div>")
+        return "".join(parts)
 
     def _render_trustworthiness(self, trust: Dict) -> str:
         if not trust or trust.get("overall_trustworthiness_score") is None:

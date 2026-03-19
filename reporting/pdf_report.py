@@ -1,6 +1,6 @@
 """
 XIPE AI Security Scanner — Professional PDF Report Generator
-Full English output. Inbest Cybersecurity.
+Full English output. NullGhost Security.
 """
 from datetime import datetime
 from pathlib import Path
@@ -19,9 +19,9 @@ from agent.finding import Finding, Severity
 
 
 # ── Brand colors ──────────────────────────────────────────────────────────────
-INBEST_DARK  = colors.HexColor("#0D1117")
-INBEST_BLUE  = colors.HexColor("#1A73E8")
-INBEST_ACCENT= colors.HexColor("#FF4500")
+NULLGHOST_DARK  = colors.HexColor("#0D1117")
+NULLGHOST_BLUE  = colors.HexColor("#1A73E8")
+NULLGHOST_ACCENT= colors.HexColor("#FF4500")
 
 SEVERITY_COLORS = {
     "CRITICAL": colors.HexColor("#B71C1C"),
@@ -96,12 +96,12 @@ class PDFReportGenerator:
         base = getSampleStyleSheet()
         self.S = {
             "cover_title": ParagraphStyle("CoverTitle", parent=base["Title"],
-                            fontSize=30, textColor=INBEST_DARK, spaceAfter=6,
+                            fontSize=30, textColor=NULLGHOST_DARK, spaceAfter=6,
                             fontName="Helvetica-Bold"),
             "cover_sub":   ParagraphStyle("CoverSub", parent=base["Normal"],
-                            fontSize=14, textColor=INBEST_BLUE, spaceAfter=20),
+                            fontSize=14, textColor=NULLGHOST_BLUE, spaceAfter=20),
             "section":     ParagraphStyle("Section", parent=base["Heading1"],
-                            fontSize=13, textColor=INBEST_DARK,
+                            fontSize=13, textColor=NULLGHOST_DARK,
                             spaceBefore=10, spaceAfter=4, fontName="Helvetica-Bold"),
             "body":        ParagraphStyle("Body", parent=base["Normal"],
                             fontSize=9, leading=14, spaceAfter=5),
@@ -145,7 +145,7 @@ class PDFReportGenerator:
         # Top accent bar
         bar = Table([["  "]], colWidths=[6.5*inch])
         bar.setStyle(TableStyle([
-            ("BACKGROUND", (0,0),(-1,-1), INBEST_ACCENT),
+            ("BACKGROUND", (0,0),(-1,-1), NULLGHOST_ACCENT),
             ("TOPPADDING", (0,0),(-1,-1), 4),
             ("BOTTOMPADDING", (0,0),(-1,-1), 4),
         ]))
@@ -155,7 +155,7 @@ class PDFReportGenerator:
         e.append(Paragraph("AI SECURITY ASSESSMENT", self.S["cover_title"]))
         e.append(Paragraph("Penetration Testing Report — Powered by XIPE", self.S["cover_sub"]))
         e.append(Spacer(1, 0.1*inch))
-        e.append(HRFlowable(width="100%", thickness=1, color=INBEST_BLUE))
+        e.append(HRFlowable(width="100%", thickness=1, color=NULLGHOST_BLUE))
         e.append(Spacer(1, 0.3*inch))
 
         eng = self.engagement
@@ -171,7 +171,7 @@ class PDFReportGenerator:
         t.setStyle(TableStyle([
             ("FONT",          (0,0),(0,-1), "Helvetica-Bold"),
             ("FONTSIZE",      (0,0),(-1,-1), 10),
-            ("TEXTCOLOR",     (0,0),(0,-1), INBEST_BLUE),
+            ("TEXTCOLOR",     (0,0),(0,-1), NULLGHOST_BLUE),
             ("TOPPADDING",    (0,0),(-1,-1), 6),
             ("BOTTOMPADDING", (0,0),(-1,-1), 6),
         ]))
@@ -196,7 +196,7 @@ class PDFReportGenerator:
         e.append(HRFlowable(width="100%", thickness=0.5, color=colors.lightgrey))
         e.append(Spacer(1, 0.1*inch))
         e.append(Paragraph(
-            "Prepared by <b>Inbest Cybersecurity</b> — Guadalajara, México — security@inbest.cloud",
+            "Prepared by <b>NullGhost Security</b> — México — security@nullghost.cloud",
             ParagraphStyle("CoverFooter", parent=self.S["body"],
                            textColor=colors.HexColor("#455A64"), fontSize=8)
         ))
@@ -207,16 +207,16 @@ class PDFReportGenerator:
     def _disclaimer(self):
         e = []
         e.append(Paragraph("Legal Disclaimer & Scope", self.S["section"]))
-        e.append(HRFlowable(width="100%", thickness=1, color=INBEST_BLUE))
+        e.append(HRFlowable(width="100%", thickness=1, color=NULLGHOST_BLUE))
         e.append(Spacer(1, 0.15*inch))
 
         disclaimer_text = (
             "This report has been prepared exclusively for the use of the authorized recipient identified "
             "on the cover page. The security assessment described herein was conducted solely within the "
-            "scope and timeframe agreed upon in the signed engagement contract between Inbest Cybersecurity "
+            "scope and timeframe agreed upon in the signed engagement contract between NullGhost Security "
             "and the client organization. "
             "All testing activities were performed with explicit written authorization. "
-            "Inbest Cybersecurity assumes no liability for the misuse of the information contained in this "
+            "NullGhost Security assumes no liability for the misuse of the information contained in this "
             "report. Redistribution or disclosure to unauthorized parties is strictly prohibited. "
             "Findings reflect the security posture of the target systems at the time of testing and may "
             "not represent the current state if remediation has been applied."
@@ -229,13 +229,13 @@ class PDFReportGenerator:
             ["Methodology:",       "Black-box / Gray-box AI security testing"],
             ["Scope:",             ", ".join(self.engagement.get("scope_urls", ["As defined in engagement contract"]))],
             ["Testing Period:",    f"{self.engagement.get('start_date','N/A')} — {self.engagement.get('end_date','N/A')}"],
-            ["Tool:",              "XIPE AI Security Scanner v2.0 by Inbest Cybersecurity"],
+            ["Tool:",              "XIPE AI Security Scanner v2.0 by NullGhost Security"],
         ]
         t = Table(scope_rows, colWidths=[1.8*inch, 4.7*inch])
         t.setStyle(TableStyle([
             ("FONT",          (0,0),(0,-1), "Helvetica-Bold"),
             ("FONTSIZE",      (0,0),(-1,-1), 9),
-            ("TEXTCOLOR",     (0,0),(0,-1), INBEST_BLUE),
+            ("TEXTCOLOR",     (0,0),(0,-1), NULLGHOST_BLUE),
             ("BACKGROUND",    (0,0),(-1,-1), colors.HexColor("#F8F9FA")),
             ("GRID",          (0,0),(-1,-1), 0.3, colors.lightgrey),
             ("TOPPADDING",    (0,0),(-1,-1), 5),
@@ -249,7 +249,7 @@ class PDFReportGenerator:
     def _executive_summary(self):
         e = []
         e.append(Paragraph("Executive Summary", self.S["section"]))
-        e.append(HRFlowable(width="100%", thickness=1, color=INBEST_BLUE))
+        e.append(HRFlowable(width="100%", thickness=1, color=NULLGHOST_BLUE))
         e.append(Spacer(1, 0.15*inch))
 
         by_sev  = self.meta.get("by_severity", {})
@@ -276,7 +276,7 @@ class PDFReportGenerator:
         e.append(Spacer(1, 0.2*inch))
 
         summary_text = (
-            f"Inbest Cybersecurity conducted an AI security assessment against the <b>{_safe(self.engagement.get('client_name',''))}</b> "
+            f"NullGhost Security conducted an AI security assessment against the <b>{_safe(self.engagement.get('client_name',''))}</b> "
             f"environment, evaluating RAG systems, conversational AI endpoints, LLM APIs, and autonomous agents. "
             f"The assessment was completed in {duration // 60}m {duration % 60}s and identified <b>{total} unique security findings</b>, "
             f"including <b>{critical} critical</b> and <b>{high} high</b> severity issues that require immediate attention."
@@ -294,7 +294,7 @@ class PDFReportGenerator:
 
         t = Table(rows, colWidths=[1.1*inch, 0.7*inch, 4.7*inch])
         style = [
-            ("BACKGROUND",    (0,0),(-1,0), INBEST_DARK),
+            ("BACKGROUND",    (0,0),(-1,0), NULLGHOST_DARK),
             ("TEXTCOLOR",     (0,0),(-1,0), colors.white),
             ("FONT",          (0,0),(-1,0), "Helvetica-Bold"),
             ("FONTSIZE",      (0,0),(-1,-1), 8.5),
@@ -341,7 +341,7 @@ class PDFReportGenerator:
     def _findings_table(self):
         e = []
         e.append(Paragraph("Findings Summary", self.S["section"]))
-        e.append(HRFlowable(width="100%", thickness=1, color=INBEST_BLUE))
+        e.append(HRFlowable(width="100%", thickness=1, color=NULLGHOST_BLUE))
         e.append(Spacer(1, 0.15*inch))
 
         rows = [["ID", "Severity", "Title", "OWASP Category"]]
@@ -355,7 +355,7 @@ class PDFReportGenerator:
 
         t = Table(rows, colWidths=[1.0*inch, 0.85*inch, 3.0*inch, 1.65*inch])
         style = [
-            ("BACKGROUND",    (0,0),(-1,0), INBEST_DARK),
+            ("BACKGROUND",    (0,0),(-1,0), NULLGHOST_DARK),
             ("TEXTCOLOR",     (0,0),(-1,0), colors.white),
             ("FONT",          (0,0),(-1,0), "Helvetica-Bold"),
             ("FONTSIZE",      (0,0),(-1,-1), 8),
@@ -377,7 +377,7 @@ class PDFReportGenerator:
     def _detailed_findings(self):
         e = []
         e.append(Paragraph("Detailed Findings", self.S["section"]))
-        e.append(HRFlowable(width="100%", thickness=1, color=INBEST_BLUE))
+        e.append(HRFlowable(width="100%", thickness=1, color=NULLGHOST_BLUE))
 
         for f in self.findings:
             e.append(Spacer(1, 0.2*inch))
@@ -389,7 +389,7 @@ class PDFReportGenerator:
                 colWidths=[0.9*inch, 4.3*inch, 1.3*inch]
             )
             hdr.setStyle(TableStyle([
-                ("BACKGROUND",    (0,0),(-1,-1), INBEST_DARK),
+                ("BACKGROUND",    (0,0),(-1,-1), NULLGHOST_DARK),
                 ("TEXTCOLOR",     (0,0),(1,0),   colors.white),
                 ("TEXTCOLOR",     (2,0),(2,0),   sev_color),
                 ("FONT",          (0,0),(-1,-1), "Helvetica-Bold"),
@@ -410,7 +410,7 @@ class PDFReportGenerator:
             det.setStyle(TableStyle([
                 ("FONT",          (0,0),(0,-1), "Helvetica-Bold"),
                 ("FONTSIZE",      (0,0),(-1,-1), 8),
-                ("TEXTCOLOR",     (0,0),(0,-1), INBEST_BLUE),
+                ("TEXTCOLOR",     (0,0),(0,-1), NULLGHOST_BLUE),
                 ("TOPPADDING",    (0,0),(-1,-1), 3),
                 ("BOTTOMPADDING", (0,0),(-1,-1), 3),
                 ("BACKGROUND",    (0,0),(-1,-1), colors.HexColor("#F8F9FA")),
@@ -456,7 +456,7 @@ class PDFReportGenerator:
     def _appendix(self):
         e = [PageBreak()]
         e.append(Paragraph("Appendix A: OWASP LLM Top 10 Reference", self.S["section"]))
-        e.append(HRFlowable(width="100%", thickness=1, color=INBEST_BLUE))
+        e.append(HRFlowable(width="100%", thickness=1, color=NULLGHOST_BLUE))
         e.append(Spacer(1, 0.15*inch))
 
         rows = [["ID", "Name", "Description"]]
@@ -466,7 +466,7 @@ class PDFReportGenerator:
 
         t = Table(rows, colWidths=[0.8*inch, 1.9*inch, 3.8*inch])
         t.setStyle(TableStyle([
-            ("BACKGROUND",    (0,0),(-1,0), INBEST_DARK),
+            ("BACKGROUND",    (0,0),(-1,0), NULLGHOST_DARK),
             ("TEXTCOLOR",     (0,0),(-1,0), colors.white),
             ("FONT",          (0,0),(-1,0), "Helvetica-Bold"),
             ("FONTSIZE",      (0,0),(-1,-1), 8),
@@ -480,7 +480,7 @@ class PDFReportGenerator:
 
         e.append(Spacer(1, 0.3*inch))
         e.append(Paragraph("Appendix B: Severity Classification", self.S["section"]))
-        e.append(HRFlowable(width="100%", thickness=1, color=INBEST_BLUE))
+        e.append(HRFlowable(width="100%", thickness=1, color=NULLGHOST_BLUE))
         e.append(Spacer(1, 0.15*inch))
 
         sev_rows = [["Severity", "CVSS Range", "Description", "Response Time"]]
@@ -496,7 +496,7 @@ class PDFReportGenerator:
 
         t2 = Table(sev_rows, colWidths=[0.8*inch, 0.85*inch, 3.4*inch, 1.45*inch])
         style2 = [
-            ("BACKGROUND",    (0,0),(-1,0), INBEST_DARK),
+            ("BACKGROUND",    (0,0),(-1,0), NULLGHOST_DARK),
             ("TEXTCOLOR",     (0,0),(-1,0), colors.white),
             ("FONT",          (0,0),(-1,0), "Helvetica-Bold"),
             ("FONTSIZE",      (0,0),(-1,-1), 8),
@@ -520,24 +520,24 @@ class PDFReportGenerator:
         canvas.saveState()
 
         # Header
-        canvas.setFillColor(INBEST_DARK)
+        canvas.setFillColor(NULLGHOST_DARK)
         canvas.rect(0, letter[1]-0.5*inch, letter[0], 0.5*inch, fill=1, stroke=0)
         canvas.setFillColor(colors.white)
         canvas.setFont("Helvetica-Bold", 8.5)
         canvas.drawString(0.75*inch, letter[1]-0.32*inch,
-                         "INBEST CYBERSECURITY | XIPE AI Security Scanner")
+                         "NULLGHOST CYBERSECURITY | XIPE AI Security Scanner")
         canvas.setFont("Helvetica", 8.5)
         canvas.drawRightString(letter[0]-0.75*inch, letter[1]-0.32*inch,
                                f"CONFIDENTIAL | {self.engagement.get('id','')}")
 
         # Accent line under header
-        canvas.setFillColor(INBEST_ACCENT)
+        canvas.setFillColor(NULLGHOST_ACCENT)
         canvas.rect(0, letter[1]-0.52*inch, letter[0], 0.04*inch, fill=1, stroke=0)
 
         # Footer
         canvas.setFillColor(colors.HexColor("#455A64"))
         canvas.setFont("Helvetica", 7.5)
         canvas.drawString(0.75*inch, 0.35*inch,
-                         f"© {datetime.utcnow().year} Inbest Cybersecurity — Confidential Document")
+                         f"© {datetime.utcnow().year} NullGhost Security — Confidential Document")
         canvas.drawRightString(letter[0]-0.75*inch, 0.35*inch, f"Page {doc.page}")
         canvas.restoreState()
