@@ -113,7 +113,8 @@ class PentestOrchestrator:
             from modules.exploit_engine import ExploitEngine
             exploit_engine = ExploitEngine(
                 target_url=self.config["scope"]["base_urls"][0],
-                logger=self.logger
+                logger=self.logger,
+                tech_stack=self.classification.get("tech_stack", [])
             )
             findings_dicts = [f.to_dict() for f in self.all_findings]
             self.exploit_results = exploit_engine.run_exploits(findings_dicts)
