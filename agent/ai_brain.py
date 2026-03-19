@@ -9,8 +9,8 @@ from typing import List, Dict, Optional, Any
 import httpx
 
 
-OPENAI_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-MODEL = "llama-3.1-8b-instant"
+ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
+CLAUDE_MODEL = "claude-sonnet-4-5"
 
 
 class XIAIBrain:
@@ -26,32 +26,33 @@ class XIAIBrain:
         self.attack_history: List[Dict] = []
 
     def _call_claude(self, system: str, user: str, max_tokens: int = 1000) -> Optional[str]:
-        """Llama a OpenAI y retorna el texto de respuesta."""
-        self.api_key = os.environ.get("OPENAI_API_KEY", "")
+        """Llama a Claude Sonnet y retorna el texto de respuesta."""
+        self.api_key = os.environ.get("ANTHROPIC_API_KEY", "")
         if not self.api_key:
             if self.logger:
-                self.logger.warning("OPENAI_API_KEY no configurado — AI Brain desactivado")
+                self.logger.warning("ANTHROPIC_API_KEY no configurado — AI Brain desactivado")
             return None
 
         try:
             resp = httpx.post(
-                OPENAI_API_URL,
+                ANTHROPIC_URL,
                 headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
+                    "x-api-key": self.api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
                 },
                 json={
-                    "model": MODEL,
+                    "model": CLAUDE_MODEL,
                     "max_tokens": max_tokens,
+                    "system": system,
                     "messages": [
-                        {"role": "system", "content": system},
                         {"role": "user", "content": user}
                     ],
                 },
                 timeout=30,
             )
             if resp.status_code == 200:
-                return resp.json()["choices"][0]["message"]["content"]
+                return resp.json()["content"][0]["text"]
         except Exception as e:
             if self.logger:
                 self.logger.error(f"OpenAI API error: {e}")
