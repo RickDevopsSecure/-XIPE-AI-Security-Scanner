@@ -27,6 +27,8 @@ from modules.ai_security import AISecurityModule
 from modules.js_analyzer import JSAnalyzer
 from modules.tls_checker import TLSChecker
 from modules.session_checker import SessionChecker
+from modules.wordpress_scanner import WordPressScanner
+from modules.wordpress_scanner import WordPressScanner
 from reporting.report_generator import ReportGenerator
 from reporting.teams_notifier import TeamsNotifier
 from reporting.training_data_collector import TrainingDataCollector
