@@ -107,6 +107,12 @@ class PentestOrchestrator:
         self.logger.section("PHASE 3 — Execution")
         self._run_modules_parallel()
 
+        # ── PHASE 3: WORDPRESS OFFENSIVE SCAN ──────────────────────────────────
+        wp_findings = self._run_wordpress_scan()
+        if wp_findings:
+            self.logger.info(f"🔴 WordPress: {len(wp_findings)} findings adicionales")
+            self.all_findings.extend(wp_findings)
+
         # ── PHASE 3.5: BRAIN-DRIVEN EXPLOITATION ────────────────────────────
         self.logger.section("PHASE 3.5 — Brain-Driven Exploitation")
         try:
@@ -237,6 +243,28 @@ class PentestOrchestrator:
         return data
 
     # ── Phase 3: Module Execution ─────────────────────────────────────────────
+
+    def _run_wordpress_scan(self) -> list:
+        """Escaneo ofensivo específico para WordPress."""
+        try:
+            tech = self.classification.get("tech_stack", [])
+            if isinstance(tech, list):
+                is_wp = any("wordpress" in t.lower() for t in tech)
+            else:
+                is_wp = "wordpress" in str(tech).lower()
+            if not is_wp:
+                return []
+            self.logger.info("🔴 WordPress detectado — activando scanner ofensivo...")
+            scanner = WordPressScanner(
+                target_url=self.config["scope"]["base_urls"][0],
+                logger=self.logger
+            )
+            findings = scanner.scan()
+            self.logger.info(f"✓ WordPress Scanner: {len(findings)} findings")
+            return findings
+        except Exception as e:
+            self.logger.error(f"WordPress scanner error: {e}")
+            return []
 
     def _run_modules_parallel(self):
         """Run relevant modules in parallel with concurrency control."""
