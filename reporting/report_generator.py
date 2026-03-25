@@ -64,6 +64,24 @@ class ReportGenerator:
         total = execution.get("total_findings", 0)
         duration = execution.get("duration_seconds", 0)
 
+        # Risk Score global (0–100) basado en severidad de findings
+        risk_score = min(100, (
+            by_sev.get("CRITICAL", 0) * 25 +
+            by_sev.get("HIGH", 0) * 12 +
+            by_sev.get("MEDIUM", 0) * 5 +
+            by_sev.get("LOW", 0) * 1
+        ))
+        if risk_score >= 75:
+            risk_grade, risk_color, risk_label = "D", "#dc2626", "Critical Risk"
+        elif risk_score >= 50:
+            risk_grade, risk_color, risk_label = "C", "#ea580c", "High Risk"
+        elif risk_score >= 25:
+            risk_grade, risk_color, risk_label = "B", "#d97706", "Moderate Risk"
+        elif risk_score > 0:
+            risk_grade, risk_color, risk_label = "B+", "#16a34a", "Low Risk"
+        else:
+            risk_grade, risk_color, risk_label = "A", "#16a34a", "Minimal Risk"
+
         findings_html = self._render_findings(findings)
         exploit_results = self.assessment.get("exploit_results", [])
         exploit_html = self._render_exploits(exploit_results)
@@ -94,6 +112,10 @@ class ReportGenerator:
   .cover-meta {{ display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-top: 40px; }}
   .cover-meta-item label {{ font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #64748b; display: block; }}
   .cover-meta-item span {{ font-size: 15px; font-weight: 600; color: #e2e8f0; }}
+  .risk-score-badge {{ display: inline-flex; align-items: center; gap: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px 24px; margin-top: 32px; }}
+  .risk-grade {{ font-size: 48px; font-weight: 800; line-height: 1; }}
+  .risk-info label {{ font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: #64748b; display: block; }}
+  .risk-info span {{ font-size: 18px; font-weight: 700; }}
 
   /* Content */
   .container {{ max-width: 960px; margin: 0 auto; padding: 40px 24px; }}
@@ -163,9 +185,17 @@ class ReportGenerator:
 
 <!-- COVER -->
 <div class="cover">
-  <div class="cover-logo">{eng.get('company', eng.get('tester', 'NullGhost Security').split(' - ')[-1] if ' - ' in eng.get('tester','') else eng.get('tester','NullGhost Security'))} · XIPE v3.1</div>
+  <div class="cover-logo">{eng.get('company', eng.get('tester', 'Inbest Cybersecurity').split(' - ')[-1] if ' - ' in eng.get('tester','') else eng.get('tester','Inbest Cybersecurity'))} · XIPE v3.1</div>
   <div class="cover-title">Security Assessment<br><span>Report</span></div>
   <div class="cover-subtitle">{eng.get('client_name', 'Client')} · {self.eng_id}</div>
+  <div class="risk-score-badge">
+    <div class="risk-grade" style="color:{risk_color}">{risk_grade}</div>
+    <div class="risk-info">
+      <label>Risk Grade</label>
+      <span style="color:{risk_color}">{risk_label}</span>
+      <div style="font-size:12px;color:#64748b;margin-top:2px">Score {risk_score}/100</div>
+    </div>
+  </div>
   <div class="cover-meta">
     <div class="cover-meta-item">
       <label>Target</label>
@@ -181,7 +211,7 @@ class ReportGenerator:
     </div>
     <div class="cover-meta-item">
       <label>Lead Tester</label>
-      <span>{eng.get('tester', 'NullGhost Security')}</span>
+      <span>{eng.get('tester', 'Inbest Cybersecurity')}</span>
     </div>
     <div class="cover-meta-item">
       <label>Authorized By</label>
@@ -246,7 +276,7 @@ class ReportGenerator:
 </div>
 
 <div class="footer">
-  <strong>XIPE v3.1 · NullGhost Security</strong> · Engagement {self.eng_id}<br>
+  <strong>XIPE v3.1 · Inbest Cybersecurity</strong> · Engagement {self.eng_id}<br>
   This report is confidential and intended exclusively for the authorized recipient.<br>
   Generated {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
 </div>

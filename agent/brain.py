@@ -502,27 +502,35 @@ Evaluate each metric from 0.0 (worst) to 1.0 (best). Return ONLY valid JSON (no 
             s = f.severity.value
             by_sev[s] = by_sev.get(s, 0) + 1
 
-        prompt = f"""You are writing an executive summary for a CISO-level security report.
+        top_findings = sorted(findings, key=lambda x: x.scoring.priority_score, reverse=True)[:5]
+        top_findings_text = "\n".join(
+            f"- [{f.severity.value}] {f.title}: {f.description[:120]}" for f in top_findings
+        )
 
-TARGET: {url}
-SYSTEM TYPE: {classification.get('system_type', 'unknown')}
-TECH STACK: {', '.join(classification.get('tech_stack', []))}
-ASSESSMENT DURATION: {duration_seconds // 60} minutes
+        prompt = f"""You are a senior security consultant at Inbest Cybersecurity writing an executive summary for a CISO-level penetration test report.
 
-FINDINGS SUMMARY:
+ENGAGEMENT CONTEXT:
+- Target: {url}
+- System Type: {classification.get('system_type', 'unknown')}
+- Tech Stack: {', '.join(classification.get('tech_stack', []))}
+- Assessment Duration: {duration_seconds // 60} minutes
+- Surface Overview: {classification.get('surface_overview', '')}
+
+FINDINGS BREAKDOWN:
 {json.dumps(by_sev, indent=2)}
+Total findings: {len(findings)}
 
-TOP FINDINGS:
-{chr(10).join(f'- [{f.severity.value}] {f.title}' for f in sorted(findings, key=lambda x: x.scoring.priority_score, reverse=True)[:5])}
+HIGHEST PRIORITY FINDINGS:
+{top_findings_text}
 
-Write a 3-4 paragraph executive summary covering:
-1. What was assessed and overall posture
-2. Critical/High findings and business risk
-3. Key recommendations
-4. Next steps
+Write a professional executive summary in 3-4 paragraphs:
+1. Opening: Overall security posture and what was assessed (mention tech stack and surface)
+2. Key Risks: Specific findings with concrete business impact (data breach, compliance, availability)
+3. Immediate Actions: Prioritized remediation roadmap (what to fix first and why)
+4. Closing: Strategic recommendation and next engagement scope
 
-Keep it clear, professional, and actionable for a non-technical executive.
-Return plain text, no JSON, no markdown headers."""
+Tone: confident, direct, non-technical. Speak to business risk, not technical jargon.
+Do NOT use bullet points, markdown, or headers. Plain paragraphs only."""
 
         resp = self._call(prompt, max_tokens=800)
         if resp:

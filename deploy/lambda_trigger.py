@@ -39,7 +39,7 @@ def handler(event, context):
     # Obtener configuración de SSM Parameter Store
     config_path  = event.get("config_ssm_path", os.environ.get("SSM_CONFIG_PATH", "/xipe/config/default"))
     engagement_id = event.get("engagement_id", f"ENG-AUTO-{datetime.utcnow().strftime('%Y%m%d-%H%M')}")
-    tester_company = event.get("tester_company", "NullGhost Security")
+    tester_company = event.get("tester_company", "Inbest Cybersecurity")
 
     try:
         # Lanzar tarea ECS Fargate con XIPE
@@ -64,7 +64,7 @@ def handler(event, context):
         }
 
 
-def _launch_xipe_task(engagement_id: str, config_ssm_path: str, target_url: str = "", client_name: str = "", tester_company: str = "NullGhost Security") -> str:
+def _launch_xipe_task(engagement_id: str, config_ssm_path: str, target_url: str = "", client_name: str = "", tester_company: str = "Inbest Cybersecurity") -> str:
     """Lanza una tarea ECS Fargate con XIPE."""
 
     cluster      = os.environ["ECS_CLUSTER"]

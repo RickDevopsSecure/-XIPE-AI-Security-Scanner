@@ -1,6 +1,6 @@
 """
 XIPE AI Security Scanner — Professional PDF Report Generator
-Full English output. NullGhost Security.
+Full English output. Inbest Cybersecurity.
 """
 from datetime import datetime
 from pathlib import Path
@@ -196,7 +196,7 @@ class PDFReportGenerator:
         e.append(HRFlowable(width="100%", thickness=0.5, color=colors.lightgrey))
         e.append(Spacer(1, 0.1*inch))
         e.append(Paragraph(
-            "Prepared by <b>NullGhost Security</b> — México — security@nullghost.cloud",
+            "Prepared by <b>Inbest Cybersecurity</b> — México — security@inbest.cloud",
             ParagraphStyle("CoverFooter", parent=self.S["body"],
                            textColor=colors.HexColor("#455A64"), fontSize=8)
         ))
@@ -213,10 +213,10 @@ class PDFReportGenerator:
         disclaimer_text = (
             "This report has been prepared exclusively for the use of the authorized recipient identified "
             "on the cover page. The security assessment described herein was conducted solely within the "
-            "scope and timeframe agreed upon in the signed engagement contract between NullGhost Security "
+            "scope and timeframe agreed upon in the signed engagement contract between Inbest Cybersecurity "
             "and the client organization. "
             "All testing activities were performed with explicit written authorization. "
-            "NullGhost Security assumes no liability for the misuse of the information contained in this "
+            "Inbest Cybersecurity assumes no liability for the misuse of the information contained in this "
             "report. Redistribution or disclosure to unauthorized parties is strictly prohibited. "
             "Findings reflect the security posture of the target systems at the time of testing and may "
             "not represent the current state if remediation has been applied."
@@ -229,7 +229,7 @@ class PDFReportGenerator:
             ["Methodology:",       "Black-box / Gray-box AI security testing"],
             ["Scope:",             ", ".join(self.engagement.get("scope_urls", ["As defined in engagement contract"]))],
             ["Testing Period:",    f"{self.engagement.get('start_date','N/A')} — {self.engagement.get('end_date','N/A')}"],
-            ["Tool:",              "XIPE AI Security Scanner v2.0 by NullGhost Security"],
+            ["Tool:",              "XIPE AI Security Scanner v3.1 by Inbest Cybersecurity"],
         ]
         t = Table(scope_rows, colWidths=[1.8*inch, 4.7*inch])
         t.setStyle(TableStyle([
@@ -276,7 +276,7 @@ class PDFReportGenerator:
         e.append(Spacer(1, 0.2*inch))
 
         summary_text = (
-            f"NullGhost Security conducted an AI security assessment against the <b>{_safe(self.engagement.get('client_name',''))}</b> "
+            f"Inbest Cybersecurity conducted an AI security assessment against the <b>{_safe(self.engagement.get('client_name',''))}</b> "
             f"environment, evaluating RAG systems, conversational AI endpoints, LLM APIs, and autonomous agents. "
             f"The assessment was completed in {duration // 60}m {duration % 60}s and identified <b>{total} unique security findings</b>, "
             f"including <b>{critical} critical</b> and <b>{high} high</b> severity issues that require immediate attention."
@@ -525,7 +525,7 @@ class PDFReportGenerator:
         canvas.setFillColor(colors.white)
         canvas.setFont("Helvetica-Bold", 8.5)
         canvas.drawString(0.75*inch, letter[1]-0.32*inch,
-                         "NULLGHOST CYBERSECURITY | XIPE AI Security Scanner")
+                         "INBEST CYBERSECURITY | XIPE AI Security Scanner v3.1")
         canvas.setFont("Helvetica", 8.5)
         canvas.drawRightString(letter[0]-0.75*inch, letter[1]-0.32*inch,
                                f"CONFIDENTIAL | {self.engagement.get('id','')}")
@@ -538,6 +538,6 @@ class PDFReportGenerator:
         canvas.setFillColor(colors.HexColor("#455A64"))
         canvas.setFont("Helvetica", 7.5)
         canvas.drawString(0.75*inch, 0.35*inch,
-                         f"© {datetime.utcnow().year} NullGhost Security — Confidential Document")
+                         f"© {datetime.utcnow().year} Inbest Cybersecurity — Confidential Document")
         canvas.drawRightString(letter[0]-0.75*inch, 0.35*inch, f"Page {doc.page}")
         canvas.restoreState()
