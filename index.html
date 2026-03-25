@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XIPE — Autonomous AI Security Scanner</title>
+<title>XIPE v4.0 — Autonomous AI Security Scanner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -16,8 +16,13 @@
 }
 html{scroll-behavior:smooth}
 body{font-family:'DM Sans',sans-serif;background:var(--dark);color:var(--text);overflow-x:hidden;cursor:none}
-.cursor{position:fixed;width:8px;height:8px;background:var(--red);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen}
-.cursor-ring{position:fixed;width:30px;height:30px;border:1px solid rgba(255,34,0,.4);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:transform .12s ease}
+/* Scroll progress bar */
+#progress-bar{position:fixed;top:0;left:0;height:2px;background:var(--red);z-index:9999;width:0;transition:width .1s linear;box-shadow:0 0 8px var(--red)}
+.cursor{position:fixed;width:8px;height:8px;background:var(--red);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);mix-blend-mode:screen}
+.cursor-ring{position:fixed;width:32px;height:32px;border:1px solid rgba(255,34,0,.4);border-radius:50%;pointer-events:none;z-index:9997;transform:translate(-50%,-50%);transition:left .1s ease,top .1s ease,transform .2s ease}
+.cursor-ring.hover{transform:translate(-50%,-50%) scale(1.7);border-color:rgba(255,34,0,.7)}
+/* Matrix canvas */
+#matrix-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:.045}
 
 /* NAV */
 nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:1.2rem 3rem;backdrop-filter:blur(12px);transition:border-color .3s,background .3s;border-bottom:1px solid transparent}
@@ -34,9 +39,30 @@ nav.scrolled{border-color:var(--border);background:rgba(8,10,13,.9)}
 .hero-grid-bg{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;opacity:.3;mask-image:radial-gradient(ellipse 80% 70% at 50% 50%,#000 30%,transparent 100%)}
 .hero-glow{position:absolute;top:20%;left:50%;width:800px;height:400px;background:radial-gradient(ellipse,rgba(255,34,0,.12) 0%,transparent 70%);transform:translateX(-50%);pointer-events:none}
 .hero-content{position:relative;max-width:900px;margin:0 auto;text-align:center}
-.hero-tag{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--red);letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem;opacity:0;animation:fade-up .6s .2s forwards}
-.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(4rem,10vw,8rem);line-height:.92;letter-spacing:.02em;margin-bottom:1.5rem;opacity:0;animation:fade-up .6s .4s forwards}
+.hero-tag{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--red);letter-spacing:.2em;text-transform:uppercase;margin-bottom:1.5rem;opacity:0;animation:fade-up .6s .2s forwards;display:inline-flex;align-items:center;gap:.6rem}
+.hero-tag::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);animation:pulse 2s infinite}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(4rem,10vw,8rem);line-height:.92;letter-spacing:.02em;margin-bottom:1.5rem;opacity:0;animation:fade-up .6s .4s forwards;position:relative}
 .hero-title em{font-style:normal;color:var(--red)}
+/* Glitch effect on hover */
+.hero-title:hover{animation:fade-up .6s .4s forwards,glitch .4s steps(2,jump-none) 1}
+@keyframes glitch{
+  0%{text-shadow:none;transform:none}
+  20%{text-shadow:-3px 0 var(--red);transform:translate(2px,0)}
+  40%{text-shadow:3px 0 var(--blue);transform:translate(-2px,0)}
+  60%{text-shadow:-2px 0 var(--green);transform:translate(1px,0)}
+  80%{text-shadow:2px 0 var(--red);transform:translate(-1px,0)}
+  100%{text-shadow:none;transform:none}
+}
+/* Ticker */
+.ticker-wrap{overflow:hidden;background:rgba(255,34,0,.04);border-top:1px solid rgba(255,34,0,.15);border-bottom:1px solid rgba(255,34,0,.15);padding:.4rem 0;position:relative;z-index:1}
+.ticker-wrap::before,.ticker-wrap::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:2}
+.ticker-wrap::before{left:0;background:linear-gradient(90deg,var(--dark),transparent)}
+.ticker-wrap::after{right:0;background:linear-gradient(-90deg,var(--dark),transparent)}
+.ticker{display:inline-flex;gap:4rem;white-space:nowrap;animation:ticker-scroll 35s linear infinite}
+.ticker:hover{animation-play-state:paused}
+.ticker-item{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--muted);letter-spacing:.1em;display:flex;align-items:center;gap:.5rem}
+.ticker-item span{color:var(--red)}
+@keyframes ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .hero-subtitle{font-size:1.1rem;color:var(--muted);max-width:600px;margin:0 auto 2.5rem;line-height:1.7;opacity:0;animation:fade-up .6s .6s forwards}
 .hero-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;opacity:0;animation:fade-up .6s .8s forwards}
 .btn-primary{display:inline-flex;align-items:center;gap:.5rem;background:var(--red);color:#fff;padding:.8rem 2rem;font-size:.9rem;font-weight:600;text-decoration:none;letter-spacing:.05em;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px));transition:background .2s,transform .2s}
@@ -45,11 +71,17 @@ nav.scrolled{border-color:var(--border);background:rgba(8,10,13,.9)}
 .btn-ghost:hover{border-color:var(--muted);color:var(--text)}
 
 /* SCAN BOX */
-.scan-container{position:absolute;bottom:3rem;left:50%;transform:translateX(-50%);width:640px;max-width:90vw}
-.scan-box{border:1px solid var(--border);background:rgba(13,17,23,.9);padding:1.5rem;position:relative;overflow:hidden;font-family:'IBM Plex Mono',monospace;font-size:.72rem}
-.scan-line{position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--red),transparent);animation:scan 2.5s linear infinite}
-@keyframes scan{0%{transform:translateY(0)}100%{transform:translateY(150px)}}
-.scan-output div{line-height:1.9}
+.scan-container{position:absolute;bottom:3rem;left:50%;transform:translateX(-50%);width:680px;max-width:92vw}
+.scan-box{border:1px solid var(--border);background:rgba(8,10,13,.92);padding:1.5rem;position:relative;overflow:hidden;font-family:'IBM Plex Mono',monospace;font-size:.72rem;backdrop-filter:blur(8px)}
+.scan-box::before{content:'';position:absolute;inset:0;border:1px solid transparent;background:linear-gradient(135deg,rgba(255,34,0,.12),transparent 60%) border-box;-webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);-webkit-mask-composite:destination-out;mask-composite:exclude;pointer-events:none}
+.scan-header{display:flex;align-items:center;gap:.5rem;margin-bottom:.8rem;padding-bottom:.8rem;border-bottom:1px solid var(--border)}
+.scan-dot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 6px var(--red);animation:pulse 1.5s infinite}
+.scan-title{font-size:.65rem;color:var(--muted);letter-spacing:.15em;text-transform:uppercase}
+.scan-line{position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--red),transparent);animation:scan 3s linear infinite}
+@keyframes scan{0%{transform:translateY(0)}100%{transform:translateY(180px)}}
+.scan-output div{line-height:2.0}
+.scan-cursor{display:inline-block;width:6px;height:13px;background:var(--green);animation:blink .7s steps(1) infinite;vertical-align:text-bottom;margin-left:2px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
 /* STATS */
 .stats-bar{border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--dark2)}
@@ -157,8 +189,12 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
 .footer-links a:hover{color:var(--text)}
 
 @keyframes fade-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.reveal{opacity:0;transform:translateY(24px);transition:opacity .6s,transform .6s}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 6px var(--red)}50%{opacity:.5;box-shadow:0 0 12px var(--red)}}
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
 .reveal.visible{opacity:1;transform:translateY(0)}
+/* Staggered reveal for grids */
+.reveal-child{opacity:0;transform:translateY(20px);transition:opacity .5s ease,transform .5s ease}
+.reveal-child.visible{opacity:1;transform:translateY(0)}
 
 @media(max-width:768px){
   nav{padding:1rem 1.5rem}
@@ -177,6 +213,8 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
 </style>
 </head>
 <body>
+<div id="progress-bar"></div>
+<canvas id="matrix-canvas"></canvas>
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursor-ring"></div>
 
@@ -188,7 +226,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
     <a href="#modules" class="nav-link">Coverage</a>
     <a href="#platforms" class="nav-link">Platforms</a>
     <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank" class="nav-link">GitHub</a>
-    <span class="nav-badge">v3.1</span>
+    <span class="nav-badge">v4.0</span>
   </div>
 </nav>
 
@@ -197,7 +235,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
   <div class="hero-grid-bg"></div>
   <div class="hero-glow"></div>
   <div class="hero-content">
-    <div class="hero-tag">XIPE v3.1 — Autonomous AI Security · CLI + Platform</div>
+    <div class="hero-tag">XIPE v4.0 — Autonomous AI Security · CLI + Platform</div>
     <h1 class="hero-title">AI Security.<br><em>Automated.</em><br>End to End.</h1>
     <p class="hero-subtitle">From a single CLI command to a full security operations platform. XIPE scans any AI target, chains findings into attack narratives, monitors endpoints with lightweight agents, and delivers professional PDF reports — without human intervention.</p>
     <div class="hero-actions">
@@ -208,10 +246,37 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
   <div class="scan-container">
     <div class="scan-box">
       <div class="scan-line"></div>
+      <div class="scan-header">
+        <div class="scan-dot"></div>
+        <span class="scan-title">XIPE Active Scan · Authorized Assessment</span>
+      </div>
       <div class="scan-output" id="terminal-output"></div>
     </div>
   </div>
 </section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker" id="ticker">
+    <span class="ticker-item"><span>CRITICAL</span> System prompt writable via unauthenticated POST</span>
+    <span class="ticker-item"><span>HIGH</span> API documentation publicly exposed — 186 endpoints</span>
+    <span class="ticker-item"><span>CRITICAL</span> SQL injection in JSON field names — DB read confirmed</span>
+    <span class="ticker-item"><span>HIGH</span> JWT algorithm confusion — RS256 → HS256 downgrade</span>
+    <span class="ticker-item"><span>CRITICAL</span> Indirect prompt injection via RAG document upload</span>
+    <span class="ticker-item"><span>MEDIUM</span> Missing HSTS — HTTP downgrade attack possible</span>
+    <span class="ticker-item"><span>HIGH</span> Unauthenticated write endpoint — 22 found</span>
+    <span class="ticker-item"><span>CRITICAL</span> API key exposed in JavaScript bundle</span>
+    <!-- duplicate for seamless loop -->
+    <span class="ticker-item"><span>CRITICAL</span> System prompt writable via unauthenticated POST</span>
+    <span class="ticker-item"><span>HIGH</span> API documentation publicly exposed — 186 endpoints</span>
+    <span class="ticker-item"><span>CRITICAL</span> SQL injection in JSON field names — DB read confirmed</span>
+    <span class="ticker-item"><span>HIGH</span> JWT algorithm confusion — RS256 → HS256 downgrade</span>
+    <span class="ticker-item"><span>CRITICAL</span> Indirect prompt injection via RAG document upload</span>
+    <span class="ticker-item"><span>MEDIUM</span> Missing HSTS — HTTP downgrade attack possible</span>
+    <span class="ticker-item"><span>HIGH</span> Unauthenticated write endpoint — 22 found</span>
+    <span class="ticker-item"><span>CRITICAL</span> API key exposed in JavaScript bundle</span>
+  </div>
+</div>
 
 <!-- STATS -->
 <div class="stats-bar">
@@ -219,7 +284,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
     <div class="stat-item reveal"><span class="stat-num" style="color:var(--red)" id="count-findings">—</span><span class="stat-label">Findings Reported</span></div>
     <div class="stat-item reveal"><span class="stat-num" style="color:var(--blue)" id="count-scans">—</span><span class="stat-label">Engagements Run</span></div>
     <div class="stat-item reveal"><span class="stat-num" style="color:var(--green)" id="count-training">—</span><span class="stat-label">Training Records</span></div>
-    <div class="stat-item reveal"><span class="stat-num" style="color:var(--amber)">10</span><span class="stat-label">OWASP LLM Categories</span></div>
+    <div class="stat-item reveal"><span class="stat-num" style="color:var(--amber)">10+</span><span class="stat-label">OWASP LLM Categories</span></div>
     <div class="stat-item reveal"><span class="stat-num" style="color:var(--purple)">12</span><span class="stat-label">Scoring Metrics</span></div>
   </div>
 </div>
@@ -291,8 +356,8 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
     <div class="phase"><div class="phase-num">PHASE 02</div><div class="phase-name">Assessment Plan</div><div class="phase-desc">Brain selects modules and explains every decision. No blind execution.</div>
       <div class="phase-items"><div class="phase-item hot">→ Module selection</div><div class="phase-item hot">→ Priority checks</div><div class="phase-item new">→ API surface size</div><div class="phase-item new">→ Prompt layer risk</div><div class="phase-item">→ Skip reasons</div></div>
     </div>
-    <div class="phase"><div class="phase-num">PHASE 03</div><div class="phase-name">Execution</div><div class="phase-desc">Parallel modules with concurrency control. Safe by default.</div>
-      <div class="phase-items"><div class="phase-item hot">→ Web + TLS + API</div><div class="phase-item hot">→ AI attacks</div><div class="phase-item new">→ API Mapper</div><div class="phase-item new">→ Prompt Hunter</div><div class="phase-item hot">→ Trustworthiness</div></div>
+    <div class="phase"><div class="phase-num">PHASE 03</div><div class="phase-name">Execution</div><div class="phase-desc">5 modules in parallel. Scope validator on every request.</div>
+      <div class="phase-items"><div class="phase-item hot">→ Web + TLS + API</div><div class="phase-item hot">→ AI attacks</div><div class="phase-item hot">→ API Mapper</div><div class="phase-item hot">→ Prompt Hunter</div><div class="phase-item hot">→ Trustworthiness</div></div>
     </div>
     <div class="phase"><div class="phase-num">PHASE 04</div><div class="phase-name">Chain + Report</div><div class="phase-desc">Chain Engine connects findings. Brain writes the narrative. PDF auto-delivered.</div>
       <div class="phase-items"><div class="phase-item new">→ Attack chains</div><div class="phase-item hot">→ Priority scoring</div><div class="phase-item hot">→ PDF + HTML</div><div class="phase-item hot">→ S3 + Teams</div><div class="phase-item hot">→ Training data</div></div>
@@ -304,7 +369,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
 <!-- CHAIN ENGINE -->
 <div class="full-border">
 <div class="section">
-  <div class="section-eyebrow reveal">Chain Engine — v3.1</div>
+  <div class="section-eyebrow reveal">Chain Engine — v4.0</div>
   <h2 class="section-title reveal">Findings don't live<br>in isolation.</h2>
   <p class="section-sub reveal">Real attackers chain vulnerabilities. XIPE connects them automatically — showing the full attack path and real business impact, not just a flat list of issues.</p>
   <div class="chain-demo reveal">
@@ -319,7 +384,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
 <!-- MODULES -->
 <div id="modules">
 <div class="section">
-  <div class="section-eyebrow reveal">Coverage — v3.1</div>
+  <div class="section-eyebrow reveal">Coverage — v4.0</div>
   <h2 class="section-title reveal">Every attack surface.<br>Including the prompt layer.</h2>
   <div class="modules-grid reveal">
     <div class="module-card"><div class="module-num">01 / WEB SECURITY</div><div class="module-name">Web Security</div><div class="module-desc">Headers, CORS, sensitive paths, verbose errors, HTTP methods, information disclosure, WordPress checks.</div><div class="module-tags"><span class="module-tag">A02</span><span class="module-tag">A05</span><span class="module-tag">HSTS</span><span class="module-tag">CSP</span><span class="module-tag">CORS</span></div></div>
@@ -395,7 +460,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
 </div>
 
 <footer>
-  <div>XIPE v3.1 · Inbest Cybersecurity · For authorized security testing only.</div>
+  <div>XIPE v4.0 · Inbest Cybersecurity · For authorized security testing only.</div>
   <div class="footer-links">
     <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank">CLI</a>
     <a href="mailto:security@inbest.cloud">Contact</a>
@@ -404,56 +469,131 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
 </footer>
 
 <script>
-const cur=document.getElementById('cursor'),ring=document.getElementById('cursor-ring');
-document.addEventListener('mousemove',e=>{cur.style.left=e.clientX+'px';cur.style.top=e.clientY+'px';setTimeout(()=>{ring.style.left=e.clientX+'px';ring.style.top=e.clientY+'px';},80);});
-window.addEventListener('scroll',()=>document.getElementById('nav').classList.toggle('scrolled',scrollY>50));
-document.querySelectorAll('.reveal').forEach(el=>new IntersectionObserver(entries=>entries.forEach(e=>e.isIntersecting&&e.target.classList.add('visible')),{threshold:.1}).observe(el));
+/* ── Scroll progress bar ─────────────────────────────── */
+const pb=document.getElementById('progress-bar');
+window.addEventListener('scroll',()=>{
+  const pct=(scrollY/(document.documentElement.scrollHeight-innerHeight))*100;
+  pb.style.width=pct+'%';
+  document.getElementById('nav').classList.toggle('scrolled',scrollY>50);
+},{ passive:true });
 
+/* ── Custom cursor ───────────────────────────────────── */
+const cur=document.getElementById('cursor'),ring=document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
+function animRing(){rx+=(mx-rx)*.15;ry+=(my-ry)*.15;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animRing);}
+animRing();
+document.querySelectorAll('a,button,.btn-primary,.btn-ghost').forEach(el=>{
+  el.addEventListener('mouseenter',()=>ring.classList.add('hover'));
+  el.addEventListener('mouseleave',()=>ring.classList.remove('hover'));
+});
+
+/* ── Matrix rain canvas ──────────────────────────────── */
+(function(){
+  const c=document.getElementById('matrix-canvas');
+  const ctx=c.getContext('2d');
+  function resize(){c.width=innerWidth;c.height=innerHeight;}
+  resize();
+  window.addEventListener('resize',resize,{passive:true});
+  const chars='アイウエオカキクケコサシスセソタチツテトナニヌネノ01';
+  const fs=13;
+  let cols=Math.floor(innerWidth/fs);
+  let drops=Array(cols).fill(1);
+  window.addEventListener('resize',()=>{cols=Math.floor(innerWidth/fs);drops=Array(cols).fill(1);},{passive:true});
+  function draw(){
+    ctx.fillStyle='rgba(8,10,13,0.05)';
+    ctx.fillRect(0,0,c.width,c.height);
+    ctx.fillStyle='#FF2200';
+    ctx.font=fs+'px monospace';
+    for(let i=0;i<drops.length;i++){
+      const ch=chars[Math.floor(Math.random()*chars.length)];
+      ctx.globalAlpha=Math.random()*0.4+0.1;
+      ctx.fillText(ch,i*fs,drops[i]*fs);
+      if(drops[i]*fs>c.height&&Math.random()>0.975)drops[i]=0;
+      drops[i]++;
+    }
+    ctx.globalAlpha=1;
+  }
+  setInterval(draw,45);
+})();
+
+/* ── Intersection observer (reveal) ─────────────────── */
+const revealObs=new IntersectionObserver(entries=>entries.forEach(e=>{
+  if(e.isIntersecting){e.target.classList.add('visible');revealObs.unobserve(e.target);}
+}),{threshold:.08,rootMargin:'0px 0px -40px 0px'});
+document.querySelectorAll('.reveal,.reveal-child').forEach(el=>revealObs.observe(el));
+
+/* ── Terminal typewriter ─────────────────────────────── */
 const lines=[
-  {t:'── XIPE v3.1 ── CLI + Platform',c:'#6E7681'},
+  {t:'── XIPE v4.0 ── CLI + Platform',c:'#6E7681'},
   {t:'$ xipe https://target-ai.com "Client"',c:'#E6EDF3'},
+  {t:'  Scope: target-ai.com  Auth: validated',c:'#6E7681'},
   {t:'── PHASE 1 — Reconnaissance ──',c:'#E6EDF3'},
   {t:'  System: ai_platform (92%) · React, Node.js',c:'#00FF41'},
   {t:'  API docs: /swagger.json → 186 endpoints',c:'#FFB800'},
   {t:'── PHASE 2 — Assessment Plan ──',c:'#E6EDF3'},
-  {t:'  Modules: web, api_mapper, prompt_hunter, ai',c:'#00FF41'},
-  {t:'── PHASE 3 — Execution ──',c:'#E6EDF3'},
+  {t:'  Modules: web + tls + api_mapper + prompt_hunter + ai',c:'#00FF41'},
+  {t:'── PHASE 3 — Execution (5 parallel) ──',c:'#E6EDF3'},
   {t:'🔓 22 unauthenticated endpoints found',c:'#FF2200'},
   {t:'💉 SQLi in JSON key: field\' OR \'1\'=\'1',c:'#FF2200'},
   {t:'🔑 Prompt storage: /api/v1/agents → WRITABLE',c:'#FF2200'},
+  {t:'🧠 API key exposed in /static/js/main.chunk.js',c:'#FF2200'},
   {t:'── PHASE 4 — Chain + Report ──',c:'#E6EDF3'},
-  {t:'🔗 CHAIN: API docs + SQLi → DB compromise',c:'#FF2200'},
+  {t:'🔗 CHAIN: API docs → SQLi → DB compromise',c:'#FF2200'},
   {t:'🔗 CHAIN: Prompt write + unauth → AI takeover',c:'#FF2200'},
-  {t:'  28 findings · 9 CRITICAL · 48s',c:'#00FF41'},
-  {t:'✅ PDF delivered · Training data saved',c:'#00FF41'},
-  {t:'',c:'#6E7681'},
-  {t:'── XIPE Platform ──',c:'#79C0FF'},
-  {t:'GET  /api/health → {"status":"ok"}',c:'#79C0FF'},
-  {t:'POST /api/scans/launch → ENG-AUTO-2026-xxx',c:'#79C0FF'},
-  {t:'WS   /api/scans/:id/live → streaming logs',c:'#79C0FF'},
-  {t:'POST /api/agents/checkin → agent online',c:'#79C0FF'},
+  {t:'  28 findings · 9 CRITICAL · 11 HIGH · 52s',c:'#00FF41'},
+  {t:'✅ PDF delivered · S3 upload complete',c:'#00FF41'},
 ];
 let li=0,ci=0,out=document.getElementById('terminal-output');
+let cursorEl=null;
 function type(){
-  if(li>=lines.length){li=0;out.innerHTML='';}
+  if(li>=lines.length){li=0;ci=0;out.innerHTML='';setTimeout(type,1200);return;}
   const l=lines[li];
-  if(ci===0){const d=document.createElement('div');d.id='cl';d.style.color=l.c;out.appendChild(d);while(out.children.length>12)out.removeChild(out.firstChild);}
+  if(ci===0){
+    if(cursorEl&&cursorEl.parentNode){cursorEl.remove();}
+    const d=document.createElement('div');d.id='cl';d.style.color=l.c;out.appendChild(d);
+    while(out.children.length>13)out.removeChild(out.firstChild);
+  }
   const c=document.getElementById('cl');
-  if(c&&ci<l.t.length){c.textContent=l.t.substring(0,ci+1);ci++;setTimeout(type,20);}
-  else{if(c)c.removeAttribute('id');ci=0;li++;setTimeout(type,li%5===0?700:160);}
+  if(c&&ci<l.t.length){
+    // Remove cursor span before adding char
+    const spanC=c.querySelector('.scan-cursor');if(spanC)spanC.remove();
+    c.textContent=l.t.substring(0,ci+1);
+    // Add cursor
+    const cs=document.createElement('span');cs.className='scan-cursor';c.appendChild(cs);
+    cursorEl=cs;
+    ci++;setTimeout(type,18);
+  }else{
+    if(c){c.removeAttribute('id');const s=c.querySelector('.scan-cursor');if(s)s.remove();}
+    ci=0;li++;setTimeout(type,l.t===''?300:li%4===0?650:130);
+  }
 }
-setTimeout(type,800);
+setTimeout(type,600);
+
+/* ── Animated counters ───────────────────────────────── */
+function animCount(id,target,duration=1400){
+  const el=document.getElementById(id);
+  if(!el||!target)return;
+  let start=null;
+  const step=ts=>{
+    if(!start)start=ts;
+    const prog=Math.min((ts-start)/duration,1);
+    const ease=1-Math.pow(1-prog,3);
+    el.textContent=Math.floor(ease*target).toLocaleString();
+    if(prog<1)requestAnimationFrame(step);else el.textContent=target.toLocaleString();
+  };
+  requestAnimationFrame(step);
+}
 
 async function loadStats(){
   try{
     const r=await fetch('https://inbest-xipe-results-205210536414.s3.amazonaws.com/public/stats.json');
     if(!r.ok)return;
     const d=await r.json();
-    const anim=(id,t)=>{const el=document.getElementById(id);if(!el||!t)return;let c=0,s=Math.ceil(t/40);const i=setInterval(()=>{c=Math.min(c+s,t);el.textContent=c.toLocaleString();if(c>=t)clearInterval(i);},40);};
-    anim('count-findings',d.total_findings);
-    anim('count-scans',d.total_scans);
+    animCount('count-findings',d.total_findings);
+    animCount('count-scans',d.total_scans);
     const r2=await fetch('https://inbest-xipe-results-205210536414.s3.amazonaws.com/training-data/index.json');
-    if(r2.ok){const d2=await r2.json();anim('count-training',d2.total_records);const il=document.getElementById('training-count-inline');if(il&&d2.total_records)il.textContent=d2.total_records.toLocaleString()+' records';}
+    if(r2.ok){const d2=await r2.json();animCount('count-training',d2.total_records);const il=document.getElementById('training-count-inline');if(il&&d2.total_records)il.textContent=d2.total_records.toLocaleString()+' records';}
   }catch(e){}
 }
 loadStats();

@@ -28,12 +28,12 @@ from modules.js_analyzer import JSAnalyzer
 from modules.tls_checker import TLSChecker
 from modules.session_checker import SessionChecker
 from modules.wordpress_scanner import WordPressScanner
-from modules.wordpress_scanner import WordPressScanner
 from reporting.report_generator import ReportGenerator
 from reporting.teams_notifier import TeamsNotifier
 from reporting.training_data_collector import TrainingDataCollector
 from reporting.stats_aggregator import update_stats
 from utils.logger import PentestLogger
+from utils.scope_validator import ScopeValidator
 
 
 class PentestOrchestrator:
@@ -75,6 +75,7 @@ class PentestOrchestrator:
                 region=aws.get("region", "us-east-1"),
             )
 
+        self.scope = ScopeValidator(self.config["scope"]["base_urls"])
         self.all_findings: List[Finding] = []
         self.exploit_results: List[Dict] = []
         self.classification: Dict = {}
@@ -88,6 +89,7 @@ class PentestOrchestrator:
         self._validate_authorization()
 
         target_url = self.config["scope"]["base_urls"][0]
+        self.logger.info(f"Scope: {', '.join(self.scope.allowed_hosts)}")
 
         # ── PHASE 1: RECONNAISSANCE ───────────────────────────────────────────
         self.logger.section("PHASE 1 — Reconnaissance")
@@ -287,6 +289,10 @@ class PentestOrchestrator:
             tasks.append(("API Security", self._run_api_security))
         if plan.get("ai_security") and self.classification.get("has_ai"):
             tasks.append(("AI Security", self._run_ai_security))
+        if plan.get("api_mapper", True) and (self.classification.get("has_api") or True):
+            tasks.append(("API Mapper", self._run_api_mapper))
+        if plan.get("prompt_hunter", True) and (self.classification.get("has_ai") or self.classification.get("has_api")):
+            tasks.append(("Prompt Hunter", self._run_prompt_hunter))
 
         self.logger.info(f"Running {len(tasks)} modules (max {max_workers} parallel)")
 
@@ -582,14 +588,29 @@ class PentestOrchestrator:
         self.logger.success("Authorization validated.")
 
     def _deduplicate(self) -> List[Finding]:
-        seen = {}
-        result = []
+        """
+        Semantic deduplication: merge findings with the same title + endpoint
+        regardless of which module found them. Keeps the one with highest priority_score.
+        """
+        import re as _re
+
+        def _normalize(text: str) -> str:
+            text = text.lower().strip()
+            text = _re.sub(r'\s+', ' ', text)
+            # Strip trailing path segments and IDs so variants collapse
+            text = _re.sub(r'[\s\-_:]+[a-f0-9\-]{8,}', '', text)
+            return text
+
+        groups: Dict[str, Finding] = {}
         for f in self.all_findings:
-            key = f"{f.title}|{f.category}|{f.module}"
-            if key not in seen:
-                seen[key] = f
-                result.append(f)
-        return result
+            key = f"{_normalize(f.title)}|{_normalize(f.endpoint or '')}"
+            existing = groups.get(key)
+            if existing is None:
+                groups[key] = f
+            elif f.scoring.priority_score > existing.scoring.priority_score:
+                groups[key] = f
+
+        return list(groups.values())
 
     def _count_by_severity(self, findings: List[Finding]) -> Dict:
         counts = {s.value: 0 for s in Severity}

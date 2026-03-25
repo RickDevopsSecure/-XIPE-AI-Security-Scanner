@@ -27,6 +27,8 @@ modules:
   tls_transport: true
   js_analysis: true
   ai_security: true
+  api_mapper: true
+  prompt_hunter: true
   prompt_injection: true
   rag_tester: true
   agent_tester: true
@@ -37,6 +39,7 @@ testing:
   max_requests_per_minute: 30
   timeout_seconds: 15
   retry_attempts: 2
+  max_concurrent_modules: 5
 
 alerting:
   min_severity_to_report: "LOW"
@@ -56,3 +59,6 @@ aws:
 integrations:
   teams_webhook_url: ""
   slack_webhook_url: ""
+
+anthropic_api_key: ""  # Set via ANTHROPIC_API_KEY env var or SSM Parameter Store
+
