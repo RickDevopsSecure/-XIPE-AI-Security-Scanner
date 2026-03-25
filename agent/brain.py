@@ -24,8 +24,8 @@ from agent.finding import Finding, Severity, ScoringDetail, PriorityBucket, OWAS
 
 # ── AI Provider Config ────────────────────────────────────────────────────────
 
-GROQ_URL   = "https://api.groq.com/openai/v1/chat/completions"
-GROQ_MODEL = "llama-3.1-8b-instant"
+ANTHROPIC_URL   = "https://api.anthropic.com/v1/messages"
+ANTHROPIC_MODEL = "claude-sonnet-4-5"
 
 
 class XIPEBrain:
@@ -36,7 +36,7 @@ class XIPEBrain:
 
     def __init__(self, logger=None):
         self.logger = logger
-        self.api_key = os.environ.get("OPENAI_API_KEY", "")
+        self.api_key = os.environ.get("ANTHROPIC_API_KEY", "")
         self.client = httpx.Client(timeout=25)
 
     # ── Target Classification ─────────────────────────────────────────────────
@@ -540,27 +540,26 @@ Return plain text, no JSON, no markdown headers."""
     # ── LLM Call ─────────────────────────────────────────────────────────────
 
     def _call(self, prompt: str, max_tokens: int = 1000) -> Optional[str]:
-        """Call the AI provider."""
+        """Call Claude via Anthropic API."""
         if not self.api_key:
             return None
         try:
             resp = self.client.post(
-                GROQ_URL,
+                ANTHROPIC_URL,
                 headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
+                    "x-api-key": self.api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
                 },
                 json={
-                    "model": GROQ_MODEL,
+                    "model": ANTHROPIC_MODEL,
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": max_tokens,
-                    "temperature": 0.3,
                 },
-                timeout=20,
+                timeout=30,
             )
             if resp.status_code == 200:
-                content = resp.json()["choices"][0]["message"]["content"]
-                return content
+                return resp.json()["content"][0]["text"]
         except Exception as e:
             self._log(f"Brain API error: {e}")
         return None
