@@ -30,7 +30,9 @@ from modules.js_analyzer import JSAnalyzer
 from modules.tls_checker import TLSChecker
 from modules.session_checker import SessionChecker
 from modules.wordpress_scanner import WordPressScanner
-from modules import jwt_tester, ssrf_tester, auth_tester, graphql_tester, business_logic_tester, subdomain_takeover
+from modules import (jwt_tester, ssrf_tester, auth_tester,
+                     graphql_tester, business_logic_tester,
+                     subdomain_takeover, xxe_tester)
 from reporting.report_generator import ReportGenerator
 from reporting.teams_notifier import TeamsNotifier
 from reporting.training_data_collector import TrainingDataCollector
@@ -346,6 +348,8 @@ class PentestOrchestrator:
             tasks.append(("Business Logic", self._run_business_logic))
         if mods_cfg.get("subdomain_takeover", True):
             tasks.append(("Subdomain Takeover", self._run_subdomain_takeover))
+        if mods_cfg.get("xxe_tester", True):
+            tasks.append(("XXE / XML Injection", self._run_xxe_tester))
 
         self.logger.info(f"Running {len(tasks)} modules (max {max_workers} parallel)")
 
@@ -459,6 +463,10 @@ class PentestOrchestrator:
     def _run_subdomain_takeover(self) -> list:
         target = getattr(self, "_current_target", self.config["scope"]["base_urls"][0])
         return subdomain_takeover.run(target, self.config)
+
+    def _run_xxe_tester(self) -> list:
+        target = getattr(self, "_current_target", self.config["scope"]["base_urls"][0])
+        return xxe_tester.run(target, self.config)
 
     def _run_trustworthiness(self) -> List[Finding]:
         from modules.trustworthiness import TrustworthinessEvaluator

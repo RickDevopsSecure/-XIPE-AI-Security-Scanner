@@ -1,21 +1,40 @@
-engagement:
-  id: "ENG-001"
-  client_name: "Target Company"
-  tester: "Your Name — Your Company"
-  company: "Your Company Name"
-  start_date: "2026-01-01"
-  end_date: "2026-12-31"
-  authorized_by: "Client Name / Authorization Reference"
-  authorization_document: "authorization_letter.pdf"
+# ─────────────────────────────────────────────────────────────────────────────
+# XIPE AI Security Scanner v4.0 — Configuration Template
+# Copy to config.yaml and fill in your values.
+# config.yaml is gitignored — never commit it.
+# ─────────────────────────────────────────────────────────────────────────────
 
+# ── Engagement metadata (required for authorization validation) ───────────────
+engagement:
+  id: "ENG-2026-001"                        # Unique engagement ID
+  client_name: "Acme Corp"                  # Client company name
+  tester: "Ricardo Martinez"                # Tester full name
+  company: "Your Security Company"          # Your company / firm name
+  contact_email: "security@yourcompany.com" # Contact email for reports
+  location: "México"                        # Location for PDF cover page
+  start_date: "2026-01-01"                  # Authorized start date (YYYY-MM-DD)
+  end_date: "2026-12-31"                    # Authorized end date   (YYYY-MM-DD)
+  authorized_by: "John Smith — CISO"        # Person who authorized the test
+  authorization_document: "auth_letter.pdf" # Reference document
+
+# ── Scope ─────────────────────────────────────────────────────────────────────
 scope:
   base_urls:
-    - "https://your-target.com"
+    - "https://target.com"
+    # Add additional targets for multi-URL scanning:
+    # - "https://api.target.com"
+    # - "https://admin.target.com"
+
   credentials:
-    api_key: ""
-    bearer_token: ""
-    user_email: ""
-    user_password: ""
+    # For authenticated scanning — leave blank for blackbox
+    api_key: ""              # API key / bearer token (preferred)
+    bearer_token: ""         # Alternative bearer token
+    username: ""             # Login username / email (for auth_tester login flow)
+    password: ""             # Login password
+    user_email: ""           # Legacy field — use username
+    user_password: ""        # Legacy field — use password
+
+  # Known API endpoints (optional — scanner auto-discovers these)
   endpoints:
     chat: "/api/v1/chat"
     rag_query: "/api/v1/query"
@@ -23,37 +42,82 @@ scope:
     assistants: "/api/v1/assistants"
     health: "/health"
 
+# ── Module toggles ─────────────────────────────────────────────────────────────
+# Set to false to skip a module. All enabled by default.
 modules:
-  web_security: true
-  tls_transport: true
-  js_analysis: true
-  ai_security: true
-  prompt_injection: true
-  rag_tester: true
-  agent_tester: true
-  trustworthiness: true
+  # ── Core web security ────────────────────────────────────────────────────────
+  web_security: true        # Security headers, CORS, cookies, sensitive paths, info disclosure
+  tls_transport: true       # TLS version, certificate validity, HSTS
+  js_analysis: true         # Secrets in JavaScript (API keys, tokens, endpoints)
 
+  # ── API testing ──────────────────────────────────────────────────────────────
+  api_mapper: true          # API endpoint discovery (REST, GraphQL, OpenAPI)
+  api_security: true        # Auth bypass, injection, mass assignment on APIs
+
+  # ── Authentication & authorization ───────────────────────────────────────────
+  auth_tester: true         # Login flow, IDOR, priv-esc, session fixation, reset poisoning
+  jwt_tester: true          # JWT algorithm confusion, weak secrets, privilege escalation
+
+  # ── Injection attacks ─────────────────────────────────────────────────────────
+  ssrf_tester: true         # SSRF — cloud metadata, internal hosts, header-based
+  xxe_tester: true          # XXE — file read, SSRF via XML, SOAP, SVG upload, XML bomb
+  graphql_tester: true      # GraphQL introspection, depth bombs, batch abuse, mutations
+
+  # ── Business logic ────────────────────────────────────────────────────────────
+  business_logic_tester: true  # Price manipulation, payment tampering, coupon abuse, IDOR orders
+
+  # ── Reconnaissance ────────────────────────────────────────────────────────────
+  subdomain_takeover: true  # Dangling CNAME → unclaimed S3, Azure, Heroku, GitHub Pages...
+
+  # ── CMS ───────────────────────────────────────────────────────────────────────
+  # wordpress: auto-activated when WordPress is detected (no toggle needed)
+
+  # ── AI / LLM platform security (activate for AI-powered targets) ──────────────
+  ai_security: true         # Auth, registration, default creds on AI platforms
+  prompt_injection: true    # Direct/indirect prompt injection (OWASP LLM01)
+  prompt_hunter: true       # System prompt extraction, API key leakage in responses
+  rag_tester: true          # RAG poisoning, document injection (OWASP LLM04)
+  agent_tester: true        # Excessive agency, tool misuse (OWASP LLM06)
+  trustworthiness: true     # Hallucination rate, consistency, safety guardrails
+
+  # ── Session security ──────────────────────────────────────────────────────────
+  session_checker: true     # Cookie flags, session timeout, predictable tokens
+
+# ── Testing parameters ─────────────────────────────────────────────────────────
 testing:
-  request_delay_seconds: 0.5
-  max_requests_per_minute: 30
-  timeout_seconds: 15
-  retry_attempts: 2
+  request_delay_seconds: 0.3    # Delay between requests (be nice to the target)
+  max_requests_per_minute: 60   # Rate cap — increase for fast internal networks
+  timeout_seconds: 15           # HTTP request timeout
+  request_timeout: 10           # Per-module request timeout
+  retry_attempts: 2             # Retry failed requests N times
+  max_concurrent_modules: 5     # Parallel module threads
 
+# ── Alerting thresholds ────────────────────────────────────────────────────────
 alerting:
-  min_severity_to_report: "LOW"
+  min_severity_to_report: "LOW"   # Include LOW+ in reports (use INFO for everything)
 
+# ── Output paths ──────────────────────────────────────────────────────────────
 output:
   log_file: "output/pentest.log"
   json_results: "output/findings.json"
+  html_report: "output/report.html"
   pdf_report: "output/report.pdf"
-  dashboard_port: 5001
+  dashboard_port: 5001            # Real-time web dashboard (--dashboard flag)
 
+# ── AWS deployment (optional — for ECS/Lambda orchestration) ──────────────────
 aws:
   enabled: false
   region: "us-east-1"
-  s3_bucket: ""
-  ecs_cluster: ""
+  s3_bucket: ""           # S3 bucket for findings + reports
+  ecs_cluster: ""         # ECS cluster for distributed scans
 
+# ── Integrations (optional) ───────────────────────────────────────────────────
 integrations:
-  teams_webhook_url: ""
-  slack_webhook_url: ""
+  teams_webhook_url: ""   # Microsoft Teams — scan complete notification
+  slack_webhook_url: ""   # Slack — scan complete notification
+
+# ── AI Brain (optional — scanner works fully without API keys) ────────────────
+# Set via environment variable: export ANTHROPIC_API_KEY=sk-ant-...
+# Or uncomment below (never commit this file with a real key):
+# anthropic_api_key: ""
+# groq_api_key: ""

@@ -1,0 +1,298 @@
+name: XIPE Security Scan
+
+on:
+  # Manual trigger with custom target
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Target URL to scan"
+        required: true
+        default: "https://your-target.com"
+      client_name:
+        description: "Client name"
+        required: true
+        default: "Demo Client"
+      mode:
+        description: "Scan mode"
+        required: false
+        default: "blackbox"
+        type: choice
+        options: [blackbox, greybox]
+
+  # Scheduled nightly scan against staging
+  schedule:
+    - cron: "0 6 * * 1-5"   # Mon–Fri at 06:00 UTC (midnight Mexico City)
+
+  # Auto-scan on push to main (against staging only)
+  push:
+    branches: [main]
+    paths:
+      - "modules/**"
+      - "agent/**"
+      - "reporting/**"
+
+env:
+  PYTHON_VERSION: "3.11"
+  ECR_REGISTRY: "205210536414.dkr.ecr.us-east-1.amazonaws.com"
+  ECR_REPOSITORY: "xipe-ai-scanner"
+  AWS_REGION: "us-east-1"
+
+jobs:
+  # ── Job 1: Lint & syntax check ─────────────────────────────────────────────
+  lint:
+    name: Lint & Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install lint dependencies
+        run: pip install flake8 pyflakes
+
+      - name: Syntax check all modules
+        run: |
+          python -m pyflakes modules/ agent/ reporting/ utils/ 2>&1 | tee lint.txt
+          # Fail on import errors or undefined names (critical bugs), warn on style
+          if grep -E "^(modules|agent|reporting|utils)/.*undefined name|cannot import" lint.txt; then
+            echo "::error::Critical lint errors found"
+            exit 1
+          fi
+          echo "Lint passed ✓"
+
+      - name: Check config.yaml.example is valid YAML
+        run: python -c "import yaml; yaml.safe_load(open('config.yaml.example'))" && echo "config.yaml.example OK ✓"
+
+  # ── Job 2: Run scan via ECS ────────────────────────────────────────────────
+  scan:
+    name: Run XIPE Scan
+    runs-on: ubuntu-latest
+    needs: lint
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Set scan parameters
+        id: params
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "target=${{ github.event.inputs.target_url }}" >> $GITHUB_OUTPUT
+            echo "client=${{ github.event.inputs.client_name }}" >> $GITHUB_OUTPUT
+          else
+            # Scheduled: use staging target from secret
+            echo "target=${{ secrets.STAGING_TARGET_URL }}" >> $GITHUB_OUTPUT
+            echo "client=Staging Auto-Scan" >> $GITHUB_OUTPUT
+          fi
+          echo "engagement_id=ENG-CI-$(date +%Y%m%d-%H%M)" >> $GITHUB_OUTPUT
+
+      - name: Trigger XIPE scan via Lambda
+        id: trigger
+        run: |
+          PAYLOAD=$(cat <<EOF
+          {
+            "target_url": "${{ steps.params.outputs.target }}",
+            "client_name": "${{ steps.params.outputs.client }}",
+            "engagement_id": "${{ steps.params.outputs.engagement_id }}",
+            "requester": "github-actions",
+            "mode": "${{ github.event.inputs.mode || 'blackbox' }}"
+          }
+          EOF
+          )
+          echo "Triggering scan: ${{ steps.params.outputs.engagement_id }}"
+          aws lambda invoke \
+            --function-name xipe-trigger \
+            --invocation-type RequestResponse \
+            --payload "$(echo $PAYLOAD | base64 -w0)" \
+            --cli-binary-format raw-in-base64-out \
+            /tmp/lambda_response.json
+          cat /tmp/lambda_response.json
+          echo "engagement_id=${{ steps.params.outputs.engagement_id }}" >> $GITHUB_OUTPUT
+
+      - name: Wait for scan results
+        id: wait
+        run: |
+          ENGAGEMENT="${{ steps.params.outputs.engagement_id }}"
+          S3_KEY="engagements/${ENGAGEMENT}/findings.json"
+          BUCKET="${{ secrets.S3_BUCKET }}"
+          echo "Waiting for s3://${BUCKET}/${S3_KEY}..."
+          for i in $(seq 1 24); do
+            sleep 30
+            if aws s3 ls "s3://${BUCKET}/${S3_KEY}" 2>/dev/null; then
+              echo "Results ready after $((i * 30))s"
+              aws s3 cp "s3://${BUCKET}/${S3_KEY}" /tmp/findings.json
+              echo "found=true" >> $GITHUB_OUTPUT
+              break
+            fi
+            echo "Attempt $i/24 — waiting..."
+          done
+
+      - name: Parse findings & set exit code
+        if: steps.wait.outputs.found == 'true'
+        run: |
+          python3 - <<'EOF'
+          import json, sys, os
+
+          with open('/tmp/findings.json') as f:
+              data = json.load(f)
+
+          findings = data.get('findings', [])
+          by_sev = {}
+          for finding in findings:
+              s = finding.get('severity', 'INFO')
+              by_sev[s] = by_sev.get(s, 0) + 1
+
+          print(f"\n{'='*60}")
+          print(f"XIPE Scan Results — {data.get('engagement', {}).get('id', 'unknown')}")
+          print(f"Target: {data.get('target', 'unknown')}")
+          print(f"{'='*60}")
+          print(f"Total findings: {len(findings)}")
+          for sev in ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']:
+              count = by_sev.get(sev, 0)
+              if count:
+                  print(f"  {sev}: {count}")
+
+          # Print critical/high details
+          critical_high = [f for f in findings if f.get('severity') in ('CRITICAL', 'HIGH')]
+          if critical_high:
+              print(f"\nCRITICAL/HIGH findings:")
+              for f in critical_high[:10]:
+                  score = f.get('scoring', {}).get('priority_score', 0)
+                  print(f"  [{f['severity']}] {f['title']} (score: {score:.1f})")
+
+          print(f"{'='*60}\n")
+
+          # Fail CI if critical findings exist
+          critical_count = by_sev.get('CRITICAL', 0)
+          if critical_count > 0:
+              print(f"::error::XIPE found {critical_count} CRITICAL vulnerabilities — failing CI")
+              sys.exit(1)
+          else:
+              print("No CRITICAL findings — CI passed ✓")
+          EOF
+
+      - name: Upload findings artifact
+        if: always() && steps.wait.outputs.found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: xipe-findings-${{ steps.params.outputs.engagement_id }}
+          path: /tmp/findings.json
+          retention-days: 90
+
+      - name: Download PDF report
+        if: steps.wait.outputs.found == 'true'
+        run: |
+          BUCKET="${{ secrets.S3_BUCKET }}"
+          ENGAGEMENT="${{ steps.params.outputs.engagement_id }}"
+          aws s3 cp "s3://${BUCKET}/engagements/${ENGAGEMENT}/reporte_XIPE_local.pdf" \
+            /tmp/xipe_report.pdf 2>/dev/null || echo "PDF not yet available"
+
+      - name: Upload PDF artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xipe-report-${{ steps.params.outputs.engagement_id }}
+          path: /tmp/xipe_report.pdf
+          retention-days: 90
+          if-no-files-found: ignore
+
+  # ── Job 3: Build & push Docker image (on main push) ───────────────────────
+  docker:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: lint
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push scanner image
+        env:
+          IMAGE_URI: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            --build-arg BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            --build-arg GIT_SHA=${{ github.sha }} \
+            -t $IMAGE_URI:${{ github.sha }} \
+            -t $IMAGE_URI:latest \
+            .
+          docker push $IMAGE_URI:${{ github.sha }}
+          docker push $IMAGE_URI:latest
+          echo "image=$IMAGE_URI:${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "Image pushed: $IMAGE_URI:${{ github.sha }} ✓"
+
+      - name: Update ECS task definition
+        run: |
+          # Get current task definition and update image URI
+          TASK_DEF=$(aws ecs describe-task-definition \
+            --task-definition xipe-scanner \
+            --region ${{ env.AWS_REGION }} \
+            --query 'taskDefinition' \
+            --output json)
+
+          NEW_IMAGE="${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+
+          NEW_TASK_DEF=$(echo $TASK_DEF | python3 -c "
+          import json, sys
+          td = json.load(sys.stdin)
+          td['containerDefinitions'][0]['image'] = '$NEW_IMAGE'
+          # Remove read-only fields
+          for key in ['taskDefinitionArn','revision','status','requiresAttributes',
+                      'compatibilities','registeredAt','registeredBy']:
+              td.pop(key, None)
+          print(json.dumps(td))
+          ")
+
+          aws ecs register-task-definition \
+            --cli-input-json "$NEW_TASK_DEF" \
+            --region ${{ env.AWS_REGION }} \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text
+          echo "Task definition updated ✓"
+
+  # ── Job 4: Security scan summary notification ──────────────────────────────
+  notify:
+    name: Notify Teams
+    runs-on: ubuntu-latest
+    needs: [scan]
+    if: always() && github.event_name != 'push'
+
+    steps:
+      - name: Send Teams notification
+        if: ${{ secrets.TEAMS_WEBHOOK_URL != '' }}
+        env:
+          WEBHOOK: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          STATUS: ${{ needs.scan.result }}
+        run: |
+          COLOR=$([ "$STATUS" = "success" ] && echo "00FF00" || echo "FF2200")
+          TITLE=$([ "$STATUS" = "success" ] && echo "✅ XIPE Scan Passed" || echo "🚨 XIPE Scan Found Critical Issues")
+          curl -s -X POST "$WEBHOOK" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"@type\": \"MessageCard\",
+              \"themeColor\": \"$COLOR\",
+              \"title\": \"$TITLE\",
+              \"text\": \"Scan job: $STATUS | Run: ${{ github.run_id }} | Branch: ${{ github.ref_name }}\"
+            }"
