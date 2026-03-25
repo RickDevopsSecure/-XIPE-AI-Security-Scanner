@@ -13,9 +13,14 @@ engagement:
 scope:
   base_urls:
     - "https://your-target.com"
+    # Add more targets for multi-URL scanning:
+    # - "https://api.your-target.com"
+    # - "https://admin.your-target.com"
   credentials:
     api_key: ""
     bearer_token: ""
+    username: ""          # For login flow (auth_tester)
+    password: ""          # For login flow (auth_tester)
     user_email: ""
     user_password: ""
   endpoints:
@@ -36,6 +41,9 @@ modules:
   rag_tester: true
   agent_tester: true
   trustworthiness: true
+  jwt_tester: true        # JWT/OAuth attack surface
+  ssrf_tester: true       # Server-Side Request Forgery
+  auth_tester: true       # Broken auth, IDOR, privilege escalation
 
 testing:
   request_delay_seconds: 0.5

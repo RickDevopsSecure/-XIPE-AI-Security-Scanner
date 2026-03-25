@@ -1,11 +1,13 @@
 """
-XIPE — Orchestrator v3.0
+XIPE — Orchestrator v4.0
 Unified 4-phase intelligent assessment flow.
 
 PHASE 1: Reconnaissance     → fingerprint target
 PHASE 2: Assessment Plan    → Brain decides what to test
 PHASE 3: Parallel Execution → run only relevant modules
 PHASE 4: Report + Training  → score, report, persist
+
+Multi-URL: iterates over all scope.base_urls, merges findings.
 """
 import json
 import os
@@ -28,6 +30,7 @@ from modules.js_analyzer import JSAnalyzer
 from modules.tls_checker import TLSChecker
 from modules.session_checker import SessionChecker
 from modules.wordpress_scanner import WordPressScanner
+from modules import jwt_tester, ssrf_tester, auth_tester
 from reporting.report_generator import ReportGenerator
 from reporting.teams_notifier import TeamsNotifier
 from reporting.training_data_collector import TrainingDataCollector
@@ -53,7 +56,7 @@ class PentestOrchestrator:
             verify=True,
             follow_redirects=True,
             timeout=self.config["testing"].get("timeout_seconds", 20),
-            headers={"User-Agent": "Inbest-XIPE/3.0 (Authorized Security Assessment)"},
+            headers={"User-Agent": "XIPE/4.0 (Authorized Security Assessment)"},
         )
 
         # Central Brain
@@ -81,6 +84,8 @@ class PentestOrchestrator:
         self.classification: Dict = {}
         self.assessment_plan: Dict = {}
         self.ai_interactions: List[Dict] = []
+        self._auth_session = None   # populated by auth_tester, shared with other modules
+        self._auth_headers: Dict = {}
 
     # ── Main Flow ─────────────────────────────────────────────────────────────
 
@@ -88,33 +93,45 @@ class PentestOrchestrator:
         self._print_banner()
         self._validate_authorization()
 
-        target_url = self.config["scope"]["base_urls"][0]
+        base_urls = self.config["scope"]["base_urls"]
+        primary_url = base_urls[0]
         self.logger.info(f"Scope: {', '.join(self.scope.allowed_hosts)}")
+        if len(base_urls) > 1:
+            self.logger.info(f"Multi-URL scan: {len(base_urls)} targets")
 
         # ── PHASE 1: RECONNAISSANCE ───────────────────────────────────────────
         self.logger.section("PHASE 1 — Reconnaissance")
-        recon_data = self._run_reconnaissance(target_url)
+        recon_data = self._run_reconnaissance(primary_url)
         self.logger.info(f"Surface detected: {recon_data.get('surface_summary', 'unknown')}")
 
         # Brain classifies the target
-        self.logger.info("🧠 Brain classifying target...")
-        self.classification = self.brain.classify_target(target_url, recon_data)
+        self.logger.info("Brain classifying target...")
+        self.classification = self.brain.classify_target(primary_url, recon_data)
         self._log_classification()
 
         # ── PHASE 2: ASSESSMENT PLAN ─────────────────────────────────────────
         self.logger.section("PHASE 2 — Assessment Plan")
-        self.logger.info("🧠 Brain planning assessment...")
-        self.assessment_plan = self.brain.plan_assessment(target_url, self.classification)
+        self.logger.info("Brain planning assessment...")
+        self.assessment_plan = self.brain.plan_assessment(primary_url, self.classification)
         self._log_plan()
 
         # ── PHASE 3: EXECUTION ───────────────────────────────────────────────
         self.logger.section("PHASE 3 — Execution")
-        self._run_modules_parallel()
+
+        # Run auth tester first so token is available to all modules
+        self._run_auth_bootstrap(primary_url)
+
+        # Run all modules against every target URL
+        for url in base_urls:
+            if url != primary_url:
+                self.logger.info(f"Scanning additional target: {url}")
+            self._current_target = url
+            self._run_modules_parallel()
 
         # ── PHASE 3: WORDPRESS OFFENSIVE SCAN ──────────────────────────────────
         wp_findings = self._run_wordpress_scan()
         if wp_findings:
-            self.logger.info(f"🔴 WordPress: {len(wp_findings)} findings adicionales")
+            self.logger.info(f"WordPress: {len(wp_findings)} findings adicionales")
             self.all_findings.extend(wp_findings)
 
         # ── PHASE 3.5: BRAIN-DRIVEN EXPLOITATION ────────────────────────────
@@ -122,7 +139,7 @@ class PentestOrchestrator:
         try:
             from modules.exploit_engine import ExploitEngine
             exploit_engine = ExploitEngine(
-                target_url=self.config["scope"]["base_urls"][0],
+                target_url=primary_url,
                 logger=self.logger,
                 tech_stack=self.classification.get("tech_stack", [])
             )
@@ -246,6 +263,31 @@ class PentestOrchestrator:
 
         return data
 
+    # ── Phase 3: Auth Bootstrap ───────────────────────────────────────────────
+
+    def _run_auth_bootstrap(self, url: str):
+        """
+        Run auth_tester first so its session token is available to every other module.
+        Also captures auth-related findings.
+        """
+        mods = self.config.get("modules", {})
+        if not mods.get("auth_tester", True):
+            return
+        try:
+            self.logger.info("Auth bootstrap — establishing session and testing auth controls...")
+            tester = auth_tester.AuthTester(url, self.config)
+            findings = tester.run()
+            self.all_findings.extend(findings)
+            # Propagate session headers to http_client and all subsequent modules
+            self._auth_headers = tester.get_session_headers()
+            if self._auth_headers:
+                for k, v in self._auth_headers.items():
+                    self.http_client.headers[k] = v
+                self.logger.info(f"Auth session established — propagating to all modules")
+            self.logger.info(f"Auth tester: {len(findings)} findings")
+        except Exception as e:
+            self.logger.error(f"Auth bootstrap error: {e}")
+
     # ── Phase 3: Module Execution ─────────────────────────────────────────────
 
     def _run_wordpress_scan(self) -> list:
@@ -273,7 +315,8 @@ class PentestOrchestrator:
     def _run_modules_parallel(self):
         """Run relevant modules in parallel with concurrency control."""
         plan = self.assessment_plan.get("modules_to_run", {})
-        max_workers = self.config["testing"].get("max_concurrent_modules", 3)
+        mods_cfg = self.config.get("modules", {})
+        max_workers = self.config["testing"].get("max_concurrent_modules", 5)
 
         tasks = []
 
@@ -293,6 +336,10 @@ class PentestOrchestrator:
             tasks.append(("API Mapper", self._run_api_mapper))
         if plan.get("prompt_hunter", True) and (self.classification.get("has_ai") or self.classification.get("has_api")):
             tasks.append(("Prompt Hunter", self._run_prompt_hunter))
+        if mods_cfg.get("jwt_tester", True):
+            tasks.append(("JWT/OAuth Tester", self._run_jwt_tester))
+        if mods_cfg.get("ssrf_tester", True):
+            tasks.append(("SSRF Tester", self._run_ssrf_tester))
 
         self.logger.info(f"Running {len(tasks)} modules (max {max_workers} parallel)")
 
@@ -382,10 +429,18 @@ class PentestOrchestrator:
         return findings
 
     def _run_prompt_hunter(self) -> list:
-        auth_token = getattr(self, '_auth_token', None)
+        auth_token = self._auth_headers.get("Authorization", "").replace("Bearer ", "") or None
         mod = PromptHunter(self.config, self.logger, self.http_client,
                           self.brain, self.classification, auth_token)
         return mod.run()
+
+    def _run_jwt_tester(self) -> list:
+        target = getattr(self, "_current_target", self.config["scope"]["base_urls"][0])
+        return jwt_tester.run(target, self.config)
+
+    def _run_ssrf_tester(self) -> list:
+        target = getattr(self, "_current_target", self.config["scope"]["base_urls"][0])
+        return ssrf_tester.run(target, self.config)
 
     def _run_trustworthiness(self) -> List[Finding]:
         from modules.trustworthiness import TrustworthinessEvaluator
@@ -625,12 +680,15 @@ class PentestOrchestrator:
         return counts
 
     def _print_banner(self):
-        self.logger.section("XIPE — AI Security Scanner v3.0 by Inbest")
         eng = self.config["engagement"]
+        company = eng.get("company", eng.get("tester", "XIPE Security"))
+        self.logger.section(f"XIPE — AI Security Scanner v4.0 | {company}")
         self.logger.info(f"Engagement ID : {eng['id']}")
         self.logger.info(f"Client        : {eng['client_name']}")
         self.logger.info(f"Tester        : {eng['tester']}")
         self.logger.info(f"Authorized by : {eng['authorized_by']}")
+        urls = self.config["scope"]["base_urls"]
+        self.logger.info(f"Targets       : {', '.join(urls)}")
         self.logger.section("")
 
     def _print_summary(self):
