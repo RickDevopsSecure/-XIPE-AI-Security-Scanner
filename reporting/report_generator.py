@@ -185,7 +185,7 @@ class ReportGenerator:
 
 <!-- COVER -->
 <div class="cover">
-  <div class="cover-logo">{eng.get('company', eng.get('tester', 'Inbest Cybersecurity').split(' - ')[-1] if ' - ' in eng.get('tester','') else eng.get('tester','Inbest Cybersecurity'))} · XIPE v3.1</div>
+  <div class="cover-logo">{eng.get('company', eng.get('tester', 'XIPE Security Scanner'))} · XIPE v4.0</div>
   <div class="cover-title">Security Assessment<br><span>Report</span></div>
   <div class="cover-subtitle">{eng.get('client_name', 'Client')} · {self.eng_id}</div>
   <div class="risk-score-badge">
@@ -211,7 +211,7 @@ class ReportGenerator:
     </div>
     <div class="cover-meta-item">
       <label>Lead Tester</label>
-      <span>{eng.get('tester', 'Inbest Cybersecurity')}</span>
+      <span>{eng.get('tester', 'N/A')}</span>
     </div>
     <div class="cover-meta-item">
       <label>Authorized By</label>
@@ -276,7 +276,7 @@ class ReportGenerator:
 </div>
 
 <div class="footer">
-  <strong>XIPE v3.1 · Inbest Cybersecurity</strong> · Engagement {self.eng_id}<br>
+  <strong>XIPE v4.0 · {eng.get('company', eng.get('tester', 'XIPE Security Scanner'))}</strong> · Engagement {self.eng_id}<br>
   This report is confidential and intended exclusively for the authorized recipient.<br>
   Generated {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}
 </div>

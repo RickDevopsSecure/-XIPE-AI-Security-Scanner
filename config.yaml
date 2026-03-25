@@ -1,7 +1,10 @@
 engagement:
   id: "ENG-001"
   client_name: "Target Company"
-  tester: "Your Name — Your Company"
+  tester: "Your Name"
+  company: "Your Company Name"
+  contact_email: "security@yourcompany.com"
+  location: "México"
   start_date: "2026-01-01"
   end_date: "2026-12-31"
   authorized_by: "Client Name / Authorization Reference"
