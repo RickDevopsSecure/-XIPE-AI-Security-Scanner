@@ -41,9 +41,12 @@ modules:
   rag_tester: true
   agent_tester: true
   trustworthiness: true
-  jwt_tester: true        # JWT/OAuth attack surface
-  ssrf_tester: true       # Server-Side Request Forgery
-  auth_tester: true       # Broken auth, IDOR, privilege escalation
+  jwt_tester: true              # JWT/OAuth attack surface
+  ssrf_tester: true             # Server-Side Request Forgery
+  auth_tester: true             # Broken auth, IDOR, privilege escalation
+  graphql_tester: true          # GraphQL introspection, depth bombs, batch abuse
+  business_logic_tester: true   # Price manipulation, payment tampering, coupon abuse
+  subdomain_takeover: true      # Dangling DNS → unclaimed cloud resources
 
 testing:
   request_delay_seconds: 0.5

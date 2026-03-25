@@ -30,7 +30,7 @@ from modules.js_analyzer import JSAnalyzer
 from modules.tls_checker import TLSChecker
 from modules.session_checker import SessionChecker
 from modules.wordpress_scanner import WordPressScanner
-from modules import jwt_tester, ssrf_tester, auth_tester
+from modules import jwt_tester, ssrf_tester, auth_tester, graphql_tester, business_logic_tester, subdomain_takeover
 from reporting.report_generator import ReportGenerator
 from reporting.teams_notifier import TeamsNotifier
 from reporting.training_data_collector import TrainingDataCollector
@@ -340,6 +340,12 @@ class PentestOrchestrator:
             tasks.append(("JWT/OAuth Tester", self._run_jwt_tester))
         if mods_cfg.get("ssrf_tester", True):
             tasks.append(("SSRF Tester", self._run_ssrf_tester))
+        if mods_cfg.get("graphql_tester", True):
+            tasks.append(("GraphQL Tester", self._run_graphql_tester))
+        if mods_cfg.get("business_logic_tester", True):
+            tasks.append(("Business Logic", self._run_business_logic))
+        if mods_cfg.get("subdomain_takeover", True):
+            tasks.append(("Subdomain Takeover", self._run_subdomain_takeover))
 
         self.logger.info(f"Running {len(tasks)} modules (max {max_workers} parallel)")
 
@@ -441,6 +447,18 @@ class PentestOrchestrator:
     def _run_ssrf_tester(self) -> list:
         target = getattr(self, "_current_target", self.config["scope"]["base_urls"][0])
         return ssrf_tester.run(target, self.config)
+
+    def _run_graphql_tester(self) -> list:
+        target = getattr(self, "_current_target", self.config["scope"]["base_urls"][0])
+        return graphql_tester.run(target, self.config)
+
+    def _run_business_logic(self) -> list:
+        target = getattr(self, "_current_target", self.config["scope"]["base_urls"][0])
+        return business_logic_tester.run(target, self.config)
+
+    def _run_subdomain_takeover(self) -> list:
+        target = getattr(self, "_current_target", self.config["scope"]["base_urls"][0])
+        return subdomain_takeover.run(target, self.config)
 
     def _run_trustworthiness(self) -> List[Finding]:
         from modules.trustworthiness import TrustworthinessEvaluator
