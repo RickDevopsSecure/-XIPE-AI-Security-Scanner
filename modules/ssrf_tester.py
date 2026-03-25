@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 import requests
 from requests.exceptions import RequestException, Timeout, ConnectionError
 
-from agent.finding import Finding, ScoringDetail
+from agent.finding import Finding, ScoringDetail, Severity, OWASPCategory
 from utils.logger import get_logger
 
 log = get_logger("ssrf_tester")
@@ -412,14 +412,14 @@ class SSRFTester:
         base_score = severity_scores.get(base_severity, 7.5)
 
         scoring = ScoringDetail(
-            severity=base_severity,
-            exploitability=0.9 if result.confidence == "confirmed" else 0.7,
-            exposure=0.9,
-            business_risk=0.95,  # Cloud credential theft = max business risk
-            asset_criticality=0.8,
-            confidence=confidence,
+            severity_score=base_score,
+            exploitability_score=9.0 if result.confidence == "confirmed" else 7.0,
+            exposure_score=9.0,
+            business_risk_score=9.5,
+            asset_criticality_score=8.0,
+            confidence_score=confidence * 10,
             priority_score=base_score,
-            rationale=f"SSRF via parameter '{result.parameter}' with payload '{result.payload[:60]}'. {result.evidence}",
+            score_explanation=f"SSRF via '{result.parameter}' → {result.ssrf_type} ({result.confidence})",
         )
 
         desc_map = {
@@ -468,17 +468,19 @@ class SSRFTester:
             "6. Log and alert on requests to metadata IPs."
         )
 
+        sev_enum = getattr(Severity, base_severity.upper(), Severity.HIGH)
         finding = Finding(
+            id=f"SSRF-{__import__('uuid').uuid4().hex[:8].upper()}",
             title=label,
-            severity=base_severity.upper(),
-            category="SSRF",
+            severity=sev_enum,
+            category=OWASPCategory.SECURITY_MISCONFIG,
             module="ssrf_tester",
             endpoint=endpoint,
             description=description,
             evidence=result.evidence,
-            request=f"{result.parameter}={result.payload}",
-            remediation=remediation,
-            cve="CWE-918",
+            request_snippet=f"{result.parameter}={result.payload}",
+            recommendation=remediation,
+            cwe="CWE-918",
             scoring=scoring,
             tags=["ssrf", "server-side-request-forgery", result.ssrf_type, "owasp-a10"],
         )

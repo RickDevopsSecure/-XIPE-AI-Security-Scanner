@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 import requests
 from requests.exceptions import RequestException, Timeout
 
-from agent.finding import Finding, ScoringDetail
+from agent.finding import Finding, ScoringDetail, Severity, OWASPCategory
 from utils.logger import get_logger
 
 log = get_logger("auth_tester")
@@ -751,31 +751,40 @@ class AuthTester:
         if any(f.title == title for f in self._findings):
             return
 
-        severity_map = {"CRITICAL": 0.95, "HIGH": 0.8, "MEDIUM": 0.6, "LOW": 0.4}
-        exp = severity_map.get(severity, 0.7)
+        severity_map = {"CRITICAL": 9.5, "HIGH": 7.5, "MEDIUM": 5.0, "LOW": 3.0}
+        exp_map = {"CRITICAL": 9.0, "HIGH": 7.5, "MEDIUM": 6.0, "LOW": 4.0}
 
         scoring = ScoringDetail(
-            severity=severity.lower(),
-            exploitability=exp,
-            exposure=0.8,
-            business_risk=0.85,
-            asset_criticality=0.8,
-            confidence=0.9,
+            severity_score=severity_map.get(severity, 7.0),
+            exploitability_score=exp_map.get(severity, 7.0),
+            exposure_score=8.0,
+            business_risk_score=8.5,
+            asset_criticality_score=8.0,
+            confidence_score=9.0,
             priority_score=priority_score,
-            rationale=evidence,
+            score_explanation=evidence[:120],
         )
 
+        sev_enum = getattr(Severity, severity.upper(), Severity.MEDIUM)
+        # Map category string to OWASPCategory
+        cat_map = {
+            "Broken Authentication": OWASPCategory.AUTH_BYPASS,
+            "Broken Access Control": OWASPCategory.BROKEN_ACCESS,
+        }
+        cat_enum = cat_map.get(category, OWASPCategory.AUTH_BYPASS)
+
         finding = Finding(
+            id=f"AUTH-{__import__('uuid').uuid4().hex[:8].upper()}",
             title=title,
-            severity=severity,
-            category=category,
+            severity=sev_enum,
+            category=cat_enum,
             module="auth_tester",
             endpoint=endpoint,
             description=description,
             evidence=evidence,
-            request=request,
-            remediation=remediation,
-            cve="CWE-287",
+            request_snippet=request,
+            recommendation=remediation,
+            cwe="CWE-287",
             scoring=scoring,
             tags=["authentication", "authorization", category.lower().replace(" ", "-")],
         )
