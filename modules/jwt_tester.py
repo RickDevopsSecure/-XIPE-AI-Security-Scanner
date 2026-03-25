@@ -597,3 +597,45 @@ class JWTTester:
         if f.severity.value in ("CRITICAL", "HIGH"):
             self.logger.finding(f.severity.value, f.title)
         return f
+
+
+# ── Orchestrator entry ───────────────────────────────────────────────────────
+
+def run(base_url: str, config: dict) -> list:
+    import logging, os
+    from pathlib import Path
+
+    # Build a minimal logger — reuse existing handlers if already configured
+    log_file = config.get("output", {}).get("log_file", "output/pentest.log")
+    Path(log_file).parent.mkdir(parents=True, exist_ok=True)
+    eng_id = config.get("engagement", {}).get("id", "ENG-000")
+    root_log = logging.getLogger("inbest.pentest")
+    if root_log.handlers:
+        # Wrap existing logger instead of creating a duplicate one
+        class _LoggerAdapter:
+            def __init__(self, l): self._l = l
+            def info(self, m, **kw): self._l.info(m)
+            def warning(self, m, **kw): self._l.warning(m)
+            def error(self, m, **kw): self._l.error(m)
+            def finding(self, sev, title, **kw): self._l.warning(f"[{sev}] {title}")
+            def module_start(self, n): pass
+            def module_done(self, n, c): self._l.info(f"✓ {n}: {c} findings")
+        logger = _LoggerAdapter(root_log)
+    else:
+        logger = PentestLogger(log_file, eng_id)
+
+    token = config.get("scope", {}).get("credentials", {}).get("bearer_token", "") or \
+            config.get("scope", {}).get("credentials", {}).get("api_key", "")
+    headers = {"User-Agent": "XIPE-SecurityScanner/4.0"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    # Override base_url in config so JWTTester uses the passed URL
+    import copy
+    cfg = copy.deepcopy(config)
+    cfg.setdefault("scope", {}).setdefault("base_urls", [])
+    cfg["scope"]["base_urls"] = [base_url]
+
+    with httpx.Client(headers=headers, verify=False,
+                      timeout=config.get("testing", {}).get("timeout_seconds", 15)) as client:
+        return JWTTester(cfg, logger, client).run()

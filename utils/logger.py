@@ -92,6 +92,11 @@ class PentestLogger:
         )
 
 
+def get_logger(name: str) -> logging.Logger:
+    """Return a standard Python logger prefixed with 'xipe.'"""
+    return logging.getLogger(f"xipe.{name}")
+
+
 class JsonFormatter(logging.Formatter):
     def __init__(self, engagement_id: str):
         super().__init__()
