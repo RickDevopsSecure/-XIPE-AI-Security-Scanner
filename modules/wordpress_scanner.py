@@ -8,6 +8,14 @@ WP_SENSITIVE_PATHS = [
     "/wp-config.php", "/wp-config.php.bak", "/.env",
     "/debug.log", "/wp-content/debug.log", "/xmlrpc.php",
     "/wp-json/wp/v2/users", "/.htaccess", "/backup.sql",
+    "/readme.html", "/license.txt", "/wp-cron.php",
+]
+
+WP_REST_ENDPOINTS = [
+    "/wp-json/wp/v2/posts",
+    "/wp-json/wp/v2/pages",
+    "/wp-json/wp/v2/comments",
+    "/wp-json/wp/v2/media",
 ]
 
 class WordPressScanner:
@@ -21,8 +29,10 @@ class WordPressScanner:
     def scan(self) -> List[Finding]:
         self._check_sensitive_files()
         self._enumerate_users()
+        self._check_rest_api()
         self._check_xmlrpc()
         self._check_wp_version()
+        self._check_login_page()
         return self.findings
 
     def _extract_credentials(self, text: str) -> Dict:
@@ -88,6 +98,89 @@ class WordPressScanner:
                         evidence="Users:\n" + "\n".join(ulist),
                         tags=["wordpress","user-enumeration"], owasp_top10="A01",
                     ))
+        except Exception:
+            pass
+
+    def _check_rest_api(self):
+        """Audita endpoints REST API más allá de /users buscando info disclosure."""
+        exposed = []
+        for path in WP_REST_ENDPOINTS:
+            url = self.target + path
+            try:
+                resp = self.session.get(url, timeout=8)
+                if resp.status_code == 200:
+                    try:
+                        data = resp.json()
+                    except Exception:
+                        continue
+                    count = len(data) if isinstance(data, list) else 1
+                    exposed.append(f"{path} → {count} items")
+            except Exception:
+                pass
+
+        if exposed:
+            self.findings.append(Finding(
+                module="wordpress_scanner",
+                title="WordPress REST API — Unauthenticated Data Exposure",
+                severity=Severity.MEDIUM,
+                description=(
+                    f"{len(exposed)} REST API endpoint(s) return data without authentication, "
+                    "potentially exposing post content, media URLs, comment authors, and internal metadata."
+                ),
+                endpoint=self.target + "/wp-json/wp/v2/",
+                recommendation=(
+                    "Restrict REST API to authenticated users: "
+                    "add_filter('rest_authentication_errors', function($r){ "
+                    "return is_user_logged_in() ? $r : new WP_Error('rest_forbidden','',['status'=>401]); });"
+                ),
+                evidence="Exposed endpoints:\n" + "\n".join(exposed),
+                tags=["wordpress", "rest-api", "information-disclosure"],
+                owasp_top10="A01",
+            ))
+            if self.logger:
+                self.logger.warning(f"  REST API exposed: {', '.join(exposed)}")
+
+    def _check_login_page(self):
+        """Detecta username enumeration vía diferencias en mensajes de error del login."""
+        url = self.target + "/wp-login.php"
+        try:
+            resp = self.session.get(url, timeout=8)
+            if resp.status_code != 200 or "user_login" not in resp.text:
+                return
+
+            # Probar con username inexistente para ver el mensaje base
+            fake_resp = self.session.post(
+                url,
+                data={"log": "xipe_nonexistent_user_zz9", "pwd": "wrongpass", "wp-submit": "Log+In"},
+                timeout=8,
+                allow_redirects=True,
+            )
+            # WordPress dice "Invalid username" para user inexistente
+            # y "The password you entered for the username X is incorrect" para user válido
+            if "invalid username" in fake_resp.text.lower():
+                self.findings.append(Finding(
+                    module="wordpress_scanner",
+                    title="WordPress Login — Username Enumeration via Error Messages",
+                    severity=Severity.MEDIUM,
+                    description=(
+                        "The login page returns different error messages for valid vs invalid usernames, "
+                        "allowing an attacker to enumerate valid accounts and then target them for brute force."
+                    ),
+                    endpoint=url,
+                    recommendation=(
+                        "add_filter('login_errors', function(){ "
+                        "return 'Invalid username or password.'; });"
+                    ),
+                    evidence=(
+                        f"POST {url} with fake username returned: "
+                        f"'{'invalid username' if 'invalid username' in fake_resp.text.lower() else 'other error'}'"
+                    ),
+                    tags=["wordpress", "login", "user-enumeration"],
+                    owasp_top10="A07",
+                ))
+                if self.logger:
+                    self.logger.warning(f"  LOGIN: Username enumeration confirmed at {url}")
+
         except Exception:
             pass
 
