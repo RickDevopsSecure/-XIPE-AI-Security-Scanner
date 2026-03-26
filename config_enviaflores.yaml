@@ -1,0 +1,77 @@
+engagement:
+  id: "ENG-ENVIAFLORES-001"
+  client_name: "Enviaflores"
+  tester: "Ricardo Martinez"
+  company: "Inbest"
+  contact_email: "security@inbest.mx"
+  location: "México"
+  start_date: "2026-03-26"
+  end_date: "2026-12-31"
+  authorized_by: "PENDIENTE — requiere autorización escrita antes de correr"
+  authorization_document: "authorization_enviaflores.pdf"
+
+scope:
+  base_urls:
+    - "https://www.enviaflores.com"
+    # - "https://api.enviaflores.com"    # agregar si existe
+    # - "https://checkout.enviaflores.com"
+  credentials:
+    api_key: ""
+    bearer_token: ""
+    username: ""
+    password: ""
+    user_email: ""       # cuenta de prueba para auth_tester
+    user_password: ""
+  endpoints:
+    health: "/"
+    checkout: "/checkout"
+    cart: "/carrito"
+
+modules:
+  web_security: true
+  tls_transport: true
+  js_analysis: true
+  ai_security: false
+  api_mapper: true
+  prompt_hunter: false
+  prompt_injection: false
+  rag_tester: false
+  agent_tester: false
+  trustworthiness: false
+  jwt_tester: true
+  ssrf_tester: true
+  auth_tester: true
+  graphql_tester: true
+  business_logic_tester: true   # precios de productos, cupones, lógica de pagos
+  subdomain_takeover: true
+  xxe_tester: true
+
+testing:
+  request_delay_seconds: 1.0
+  max_requests_per_minute: 20
+  timeout_seconds: 10
+  retry_attempts: 2
+  max_concurrent_modules: 4
+
+alerting:
+  min_severity_to_report: "LOW"
+
+output:
+  log_file: "output/enviaflores_pentest.log"
+  json_results: "output/enviaflores_findings.json"
+  pdf_report: "output/enviaflores_report.pdf"
+  dashboard_port: 5001
+
+aws:
+  enabled: false
+  region: "us-east-1"
+  s3_bucket: ""
+  ecs_cluster: ""
+
+integrations:
+  teams_webhook_url: ""
+  slack_webhook_url: ""
+  platform_api_url: "https://lgbg1u567l.execute-api.us-east-1.amazonaws.com"
+  platform_api_token: "xipe-admin-2026"
+
+anthropic_api_key: ""  # Set via ANTHROPIC_API_KEY env var

@@ -132,10 +132,13 @@ class SSRFResult:
 class SSRFTester:
     """Detects Server-Side Request Forgery vulnerabilities."""
 
+    # Hard cap: SSRF module never runs longer than this many seconds
+    MODULE_TIMEOUT = 90
+
     def __init__(self, base_url: str, config: Dict[str, Any]):
         self.base_url = base_url.rstrip("/")
         self.config = config
-        self.timeout = config.get("testing", {}).get("request_timeout", 8)
+        self.timeout = config.get("testing", {}).get("request_timeout", 5)
         self.session = requests.Session()
         self.session.verify = False
         self.session.headers.update({
@@ -147,26 +150,33 @@ class SSRFTester:
             self.session.headers["Authorization"] = f"Bearer {token}"
 
         self._findings: List[Finding] = []
+        self._deadline: float = 0.0  # set in run()
 
     # ─────────────────────────────────────────────────────────────────────────
     # Public entry point
     # ─────────────────────────────────────────────────────────────────────────
 
     def run(self) -> List[Finding]:
-        log.info("Starting SSRF tests against %s", self.base_url)
+        self._deadline = time.monotonic() + self.MODULE_TIMEOUT
+        log.info("Starting SSRF tests against %s (cap: %ds)", self.base_url, self.MODULE_TIMEOUT)
 
         # 1. Discover injectable parameters via spider
         endpoints = self._discover_endpoints()
 
         # 2. Test each endpoint
         for ep in endpoints:
+            if time.monotonic() > self._deadline:
+                log.info("SSRF module timeout reached — stopping early")
+                break
             self._test_endpoint_params(ep)
 
         # 3. Test header-based SSRF on root
-        self._test_header_ssrf()
+        if time.monotonic() < self._deadline:
+            self._test_header_ssrf()
 
         # 4. Test metadata URL directly if server echoes back request data
-        self._test_open_redirect_to_metadata()
+        if time.monotonic() < self._deadline:
+            self._test_open_redirect_to_metadata()
 
         log.info("SSRF tests complete — %d findings", len(self._findings))
         return self._findings
@@ -273,16 +283,6 @@ class SSRFTester:
                         allow_redirects=True,
                     )
         except (Timeout, ConnectionError):
-            # Timeout on metadata endpoint = possible blind SSRF to internal
-            if "169.254.169.254" in payload or "metadata" in payload:
-                return SSRFResult(
-                    vulnerable=True,
-                    ssrf_type=f"blind_{ssrf_type}",
-                    parameter=param,
-                    payload=payload,
-                    evidence="Request timed out reaching metadata IP — possible blind SSRF",
-                    confidence="possible",
-                )
             return None
         except Exception:
             return None
