@@ -322,21 +322,28 @@ class PentestOrchestrator:
 
         tasks = []
 
-        if plan.get("web_security", True):
+        # config modules section is authoritative — if set to false it overrides brain plan
+        def _enabled(key: str, default: bool = True) -> bool:
+            cfg_val = mods_cfg.get(key)
+            if cfg_val is False:
+                return False
+            return plan.get(key, default)
+
+        if _enabled("web_security"):
             tasks.append(("Web Security", self._run_web_security))
-        if plan.get("tls_transport", True):
+        if _enabled("tls_transport"):
             tasks.append(("TLS / Transport", self._run_tls))
-        if plan.get("js_analysis") and self.classification.get("is_spa"):
+        if _enabled("js_analysis") and self.classification.get("is_spa"):
             tasks.append(("JavaScript Analysis", self._run_js_analysis))
-        if plan.get("session_security") and self.classification.get("is_authenticated"):
+        if _enabled("session_security", False) and self.classification.get("is_authenticated"):
             tasks.append(("Session Security", self._run_session))
-        if plan.get("api_security") and self.classification.get("has_api"):
+        if _enabled("api_security", False) and self.classification.get("has_api"):
             tasks.append(("API Security", self._run_api_security))
-        if plan.get("ai_security") and self.classification.get("has_ai"):
+        if _enabled("ai_security", False) and self.classification.get("has_ai"):
             tasks.append(("AI Security", self._run_ai_security))
-        if plan.get("api_mapper", True) and (self.classification.get("has_api") or True):
+        if _enabled("api_mapper"):
             tasks.append(("API Mapper", self._run_api_mapper))
-        if plan.get("prompt_hunter", True) and (self.classification.get("has_ai") or self.classification.get("has_api")):
+        if _enabled("prompt_hunter") and (self.classification.get("has_ai") or self.classification.get("has_api")):
             tasks.append(("Prompt Hunter", self._run_prompt_hunter))
         if mods_cfg.get("jwt_tester", True):
             tasks.append(("JWT/OAuth Tester", self._run_jwt_tester))

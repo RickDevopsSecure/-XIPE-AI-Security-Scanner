@@ -208,17 +208,24 @@ class SSRFTester:
         method = ep["method"]
         params = ep.get("params", SSRF_PARAMS)
 
-        # Quick reachability check
+        # Quick reachability check — skip 404/502/503
         try:
             r = self.session.request(method, url, timeout=3, allow_redirects=False)
+            if r.status_code in (404, 502, 503, 400):
+                return
         except Exception:
-            return  # endpoint doesn't exist, skip
+            return
 
+        found_this_endpoint = False
         for param in params:
+            if found_this_endpoint:
+                break
             for payload, ssrf_type in self._get_payloads():
                 result = self._inject_param(url, method, param, payload, ssrf_type)
                 if result and result.vulnerable:
                     self._record_finding(result, url)
+                    found_this_endpoint = True
+                    break
 
     def _get_payloads(self) -> List[Tuple[str, str]]:
         """Returns (payload, ssrf_type) pairs."""
@@ -352,19 +359,22 @@ class SSRFTester:
                 confidence="confirmed",
             )
 
-        # Check for internal service responses
+        # Check for internal service responses — only report on confirmed metadata content,
+        # not generic HTML pages (which also contain <title>, nginx, etc.)
         if "169.254.169.254" in payload or "metadata" in payload:
-            # Any 200 from a metadata URL param is suspicious
-            if resp.status_code == 200 and len(body) > 50:
-                internal_hits = [ind for ind in INTERNAL_INDICATORS if ind.lower() in body.lower()]
-                if internal_hits:
+            if resp.status_code == 200:
+                # Only trigger on actual cloud metadata keywords in the body
+                cloud_hits = [ind for ind in ["ami-id", "instance-id", "serviceAccounts",
+                              "azEnvironment", "subscriptionId", "iam/security-credentials"]
+                              if ind.lower() in body.lower()]
+                if cloud_hits:
                     return SSRFResult(
                         vulnerable=True,
                         ssrf_type=ssrf_type,
                         parameter=param,
                         payload=payload,
-                        evidence=f"200 response with internal service signatures: {', '.join(internal_hits[:3])}",
-                        confidence="likely",
+                        evidence=f"Cloud metadata content in response: {', '.join(cloud_hits[:3])}",
+                        confidence="confirmed",
                     )
 
         # If server echoes the payload URL in the response body, it fetched it
@@ -389,11 +399,6 @@ class SSRFTester:
         confidence_map = {"confirmed": 1.0, "likely": 0.8, "possible": 0.6}
         confidence = confidence_map.get(result.confidence, 0.7)
 
-        # Avoid duplicates
-        key = f"{result.ssrf_type}|{result.parameter}|{endpoint}"
-        if any(f.title in key or key in f.title for f in self._findings):
-            return
-
         type_labels = {
             "cloud_metadata_aws":   ("AWS Cloud Metadata SSRF", "critical"),
             "cloud_metadata_gcp":   ("GCP Cloud Metadata SSRF", "critical"),
@@ -405,8 +410,14 @@ class SSRFTester:
             "header_ssrf":          ("Header-Based SSRF (Metadata IP)", "medium"),
             "open_redirect_ssrf":   ("Open Redirect to Internal Resource", "medium"),
         }
-
         label, base_severity = type_labels.get(result.ssrf_type, ("Server-Side Request Forgery", "high"))
+
+        # Deduplicate by title + endpoint
+        if any(f.title == label and f.endpoint == endpoint for f in self._findings):
+            return
+        # Also deduplicate same ssrf_type across different endpoints (one finding per type)
+        if any(f.title == label for f in self._findings):
+            return
 
         severity_scores = {"critical": 9.5, "high": 7.5, "medium": 5.0}
         base_score = severity_scores.get(base_severity, 7.5)

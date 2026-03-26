@@ -459,6 +459,14 @@ class PromptHunter:
 
     def _add(self, owasp_top10=None, owasp_llm_top10=None, cwe=None,
              tags=None, false_positive_risk="MEDIUM", **kwargs) -> Finding:
+        title = kwargs.get("title", "")
+        endpoint = kwargs.get("endpoint", "")
+        # Deduplicate by title (ignore endpoint variations for JS-based findings)
+        if any(f.title == title for f in self.findings):
+            return Finding(id="DEDUP", title=title, severity=kwargs.get("severity", Severity.INFO),
+                           category=kwargs.get("category", OWASPCategory.LLM02_INSECURE_OUTPUT),
+                           module="prompt_hunter", endpoint=endpoint, description="",
+                           evidence="", recommendation="")
         f = Finding(
             id=f"PHUNT-{str(uuid.uuid4())[:8].upper()}",
             module="prompt_hunter",
