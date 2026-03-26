@@ -41,6 +41,12 @@ class ReportGenerator:
         return str(path)
 
     def generate_pdf(self) -> Optional[str]:
+        import os
+        # macOS (Homebrew): ensure pango/gobject libraries are on the search path
+        homebrew_lib = "/opt/homebrew/lib"
+        dyld = os.environ.get("DYLD_LIBRARY_PATH", "")
+        if homebrew_lib not in dyld:
+            os.environ["DYLD_LIBRARY_PATH"] = f"{homebrew_lib}:{dyld}".rstrip(":")
         try:
             from weasyprint import HTML
             html_path = self.output_dir / "reporte_XIPE_local.html"

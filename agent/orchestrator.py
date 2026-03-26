@@ -568,6 +568,34 @@ class PentestOrchestrator:
             )
             self.logger.success("Teams notification sent ✓")
 
+        # Push results to XIPE platform dashboard
+        platform_url = self.config.get("integrations", {}).get("platform_api_url", "")
+        platform_token = self.config.get("integrations", {}).get("platform_api_token", "") or \
+                         os.environ.get("XIPE_PLATFORM_TOKEN", "")
+        if platform_url and platform_token:
+            try:
+                import base64
+                import requests as _req
+                ingest_payload = dict(assessment_result)
+                if pdf_path:
+                    try:
+                        with open(pdf_path, "rb") as _pf:
+                            ingest_payload["pdf_b64"] = base64.b64encode(_pf.read()).decode("ascii")
+                    except Exception:
+                        pass
+                resp = _req.post(
+                    platform_url.rstrip("/") + "/api/scans/ingest",
+                    json=ingest_payload,
+                    headers={"Authorization": f"Bearer {platform_token}"},
+                    timeout=30,
+                )
+                if resp.status_code == 200:
+                    self.logger.success(f"Results pushed to platform dashboard ✓")
+                else:
+                    self.logger.warning(f"Platform push returned {resp.status_code}: {resp.text[:200]}")
+            except Exception as e:
+                self.logger.warning(f"Could not push to platform: {e}")
+
         # Update public stats for landing page
         if self.config.get("aws", {}).get("enabled") and self.config.get("aws", {}).get("s3_bucket"):
             try:
