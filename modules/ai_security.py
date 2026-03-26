@@ -191,18 +191,8 @@ class AISecurityModule:
                         token = (data.get("token") or data.get("access_token") or
                                  data.get("jwt") or data.get("accessToken"))
                         if token:
+                            # Store token for AI testing — finding is reported by auth_tester
                             self.auth_token = token
-                            self._add(
-                                title=f"Default Credentials Accepted: {endpoint}",
-                                severity=Severity.CRITICAL,
-                                category=OWASPCategory.AUTH_BYPASS,
-                                description=f"Default credentials accepted at {endpoint}.",
-                                endpoint=self.base_url + endpoint,
-                                recommendation="Change all default credentials immediately. Enforce password policy.",
-                                owasp_top10="A07",
-                                false_positive_risk="LOW",
-                                tags=["auth", "default-creds"],
-                            )
                             return
                 except Exception:
                     pass
