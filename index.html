@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>XIPE v4.0 — Autonomous AI Security Scanner</title>
+<title>XIPE v4.1 — Autonomous AI Security Scanner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -226,7 +226,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
     <a href="#modules" class="nav-link">Coverage</a>
     <a href="#platforms" class="nav-link">Platforms</a>
     <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank" class="nav-link">GitHub</a>
-    <span class="nav-badge">v4.0</span>
+    <span class="nav-badge">v4.1</span>
   </div>
 </nav>
 
@@ -235,7 +235,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
   <div class="hero-grid-bg"></div>
   <div class="hero-glow"></div>
   <div class="hero-content">
-    <div class="hero-tag">XIPE v4.0 — Autonomous AI Security · CLI + Platform</div>
+    <div class="hero-tag">XIPE v4.1 — Autonomous AI Security · CLI + Platform</div>
     <h1 class="hero-title">AI Security.<br><em>Automated.</em><br>End to End.</h1>
     <p class="hero-subtitle">From a single CLI command to a full security operations platform. XIPE scans any AI target, chains findings into attack narratives, monitors endpoints with lightweight agents, and delivers professional PDF reports — without human intervention.</p>
     <div class="hero-actions">
@@ -297,47 +297,48 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
 </div>
 <div class="products reveal">
   <div class="product-card cli">
-    <div class="product-eyebrow">XIPE CLI — Open Source</div>
+    <div class="product-eyebrow">XIPE CLI v4.1 — Open Source</div>
     <div class="product-title">Scanner.<br>One Command.</div>
-    <p class="product-desc">Point at any URL. Get a professional PDF report in minutes. Runs on AWS ECS — no infrastructure on your side. Ideal for individual assessments and automation.</p>
+    <p class="product-desc">Point at any URL. Get a professional PDF report in under 2 minutes. Blackbox, greybox or whitebox — pass credentials and XIPE authenticates automatically.</p>
     <div class="product-features">
       <div class="product-feature">4-phase intelligent assessment</div>
-      <div class="product-feature">Brain classifies target automatically</div>
-      <div class="product-feature">HackerOne-inspired scoring</div>
+      <div class="product-feature">17 parallel security modules</div>
+      <div class="product-feature">Brain auto-classifies any target</div>
+      <div class="product-feature">Blackbox / greybox / whitebox modes</div>
       <div class="product-feature">Chain Engine — attack narratives</div>
-      <div class="product-feature">PDF + HTML reports to S3</div>
-      <div class="product-feature">Teams notifications</div>
-      <div class="product-feature">Training data collection</div>
+      <div class="product-feature">PDF + HTML reports + Teams alerts</div>
+      <div class="product-feature">Self-updating: <code style="color:var(--green)">bash update.sh</code></div>
     </div>
     <a href="https://github.com/RickDevopsSecure/-XIPE-AI-Security-Scanner" target="_blank" class="btn-primary btn-sm" style="display:inline-flex">→ GitHub</a>
     <div class="product-screenshot" style="margin-top:1.5rem">
-      <div style="color:var(--green)">$ xipe https://target-ai.com "Client"</div>
-      <div style="color:var(--muted)">🧠 Brain: ai_platform (92%)</div>
-      <div style="color:var(--red)">🚨 CRITICAL: Prompt storage writable</div>
-      <div style="color:var(--amber)">🔗 CHAIN: 2 attack chains identified</div>
-      <div style="color:var(--green)">✅ PDF delivered in 48s</div>
+      <div style="color:var(--green)">$ python main.py --config config.yaml</div>
+      <div style="color:var(--muted)">🧠 Brain: wordpress (95%) — 17 modules</div>
+      <div style="color:var(--red)">🚨 HIGH: /wp-config.php exposed</div>
+      <div style="color:var(--amber)">🔗 CHAIN: User enum → brute force path</div>
+      <div style="color:var(--green)">✅ PDF + JSON in output/ — 1m 52s</div>
+      <div style="color:var(--muted);margin-top:.5rem">$ bash update.sh   # pull latest version</div>
     </div>
   </div>
   <div class="product-card platform">
-    <div class="product-eyebrow">XIPE Platform — Full Stack</div>
-    <div class="product-title">Dashboard.<br>Agents. Portal.</div>
-    <p class="product-desc">A complete security operations platform. Admin dashboard, client portal, lightweight agents that monitor AI endpoints in real time, and live scan logs via WebSocket.</p>
+    <div class="product-eyebrow">XIPE Platform — SaaS</div>
+    <div class="product-title">Dashboard.<br>Scans. Portal.</div>
+    <p class="product-desc">Full security operations platform. Launch scans for any target from the browser, track results across clients, download PDF reports — no CLI required.</p>
     <div class="product-features">
       <div class="product-feature" style="--c:var(--blue)">Admin dashboard — all clients, all scans</div>
+      <div class="product-feature">Launch scan from browser — any URL</div>
+      <div class="product-feature">Live progress screen with phase tracker</div>
+      <div class="product-feature">PDF download with one click</div>
       <div class="product-feature">Client portal — each client sees their own</div>
-      <div class="product-feature">Launch scans from browser UI</div>
-      <div class="product-feature">Live logs via WebSocket</div>
       <div class="product-feature">Lightweight agents on endpoints</div>
-      <div class="product-feature">Agents detect prompt layer changes</div>
-      <div class="product-feature">FastAPI + DynamoDB + AWS ECS + ALB</div>
+      <div class="product-feature">FastAPI + DynamoDB + ECS Fargate + ALB</div>
     </div>
-    <a href="mailto:security@inbest.cloud" class="btn-ghost" style="display:inline-flex;border-color:var(--blue);color:var(--blue)">→ Request Access</a>
+    <a href="https://xipe.socaiops.com" target="_blank" class="btn-ghost" style="display:inline-flex;border-color:var(--blue);color:var(--blue)">→ Live Demo</a>
     <div class="product-screenshot" style="margin-top:1.5rem;border-color:rgba(121,192,255,.2)">
-      <div style="color:var(--blue)">Dashboard  → All clients · All scans · Stats</div>
-      <div style="color:var(--blue)">Scans      → Launch · Live logs · PDF report</div>
-      <div style="color:var(--blue)">Hallazgos  → Findings by severity · Exploits</div>
-      <div style="color:var(--blue)">Agentes    → Endpoint monitoring · Real-time</div>
-      <div style="color:var(--green)">✅ Private deployment · Access by invitation</div>
+      <div style="color:var(--blue)">① Enter URL + client name in browser</div>
+      <div style="color:var(--blue)">② ECS Fargate spins up — scan starts</div>
+      <div style="color:var(--blue)">③ Live phase tracker: recon → modules</div>
+      <div style="color:var(--blue)">④ Results appear automatically</div>
+      <div style="color:var(--green)">✅ PDF ready to download in ~2 min</div>
     </div>
   </div>
 </div>
@@ -369,7 +370,7 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
 <!-- CHAIN ENGINE -->
 <div class="full-border">
 <div class="section">
-  <div class="section-eyebrow reveal">Chain Engine — v4.0</div>
+  <div class="section-eyebrow reveal">Chain Engine — v4.1</div>
   <h2 class="section-title reveal">Findings don't live<br>in isolation.</h2>
   <p class="section-sub reveal">Real attackers chain vulnerabilities. XIPE connects them automatically — showing the full attack path and real business impact, not just a flat list of issues.</p>
   <div class="chain-demo reveal">
@@ -384,15 +385,19 @@ footer{border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-i
 <!-- MODULES -->
 <div id="modules">
 <div class="section">
-  <div class="section-eyebrow reveal">Coverage — v4.0</div>
+  <div class="section-eyebrow reveal">Coverage — v4.1</div>
   <h2 class="section-title reveal">Every attack surface.<br>Including the prompt layer.</h2>
   <div class="modules-grid reveal">
-    <div class="module-card"><div class="module-num">01 / WEB SECURITY</div><div class="module-name">Web Security</div><div class="module-desc">Headers, CORS, sensitive paths, verbose errors, HTTP methods, information disclosure, WordPress checks.</div><div class="module-tags"><span class="module-tag">A02</span><span class="module-tag">A05</span><span class="module-tag">HSTS</span><span class="module-tag">CSP</span><span class="module-tag">CORS</span></div></div>
-    <div class="module-card new-card"><div class="module-num">02 / API MAPPER <span class="badge-new">NEW</span></div><div class="module-name">API Mapper</div><div class="module-desc">Parses Swagger/OpenAPI. Finds unauthenticated write ops. Tests SQL injection in JSON field names — the vector standard scanners miss.</div><div class="module-tags"><span class="module-tag hot">JSON-key SQLi</span><span class="module-tag hot">Swagger</span><span class="module-tag">API1</span><span class="module-tag">A03</span></div></div>
-    <div class="module-card new-card"><div class="module-num">03 / PROMPT HUNTER <span class="badge-new">NEW</span></div><div class="module-name">Prompt Hunter</div><div class="module-desc">Finds system prompt storage. Tests if writable. Extracts hardcoded prompts from JS. Tests indirect injection via RAG uploads.</div><div class="module-tags"><span class="module-tag hot">Write access</span><span class="module-tag hot">Crown Jewel</span><span class="module-tag">LLM07</span></div></div>
-    <div class="module-card"><div class="module-num">04 / AI SECURITY</div><div class="module-name">AI / LLM Security</div><div class="module-desc">Prompt injection, jailbreak, data extraction, excessive agency. Auto-registers accounts. Full OWASP LLM Top 10.</div><div class="module-tags"><span class="module-tag">LLM01</span><span class="module-tag">LLM02</span><span class="module-tag">LLM06</span><span class="module-tag">LLM07</span></div></div>
-    <div class="module-card"><div class="module-num">05 / TRUSTWORTHINESS</div><div class="module-name">AI Trustworthiness</div><div class="module-desc">Detects hallucinations, false capability claims, overconfidence. 8 scored metrics including factual accuracy and action honesty.</div><div class="module-tags"><span class="module-tag">LLM09</span><span class="module-tag">hallucination</span><span class="module-tag">calibration</span></div></div>
-    <div class="module-card new-card"><div class="module-num">06 / CHAIN ENGINE <span class="badge-new">NEW</span></div><div class="module-name">Chain Engine</div><div class="module-desc">Connects findings into attack narratives. Shows real business impact of combined vulnerabilities. SQLi + write = DB compromise.</div><div class="module-tags"><span class="module-tag hot">Chaining</span><span class="module-tag hot">Escalation</span><span class="module-tag">narrative</span></div></div>
+    <div class="module-card"><div class="module-num">01 / WEB SECURITY</div><div class="module-name">Web Security</div><div class="module-desc">Headers, CORS, sensitive paths, verbose errors, cookies, information disclosure, HTTP methods. Auto-activates WordPress module on CMS detection.</div><div class="module-tags"><span class="module-tag">A02</span><span class="module-tag">A05</span><span class="module-tag">HSTS</span><span class="module-tag">CSP</span><span class="module-tag">CORS</span></div></div>
+    <div class="module-card new-card"><div class="module-num">02 / API MAPPER <span class="badge-new">ACTIVE</span></div><div class="module-name">API Mapper</div><div class="module-desc">Parses Swagger/OpenAPI. Finds unauthenticated write ops. Tests SQL injection in JSON field names — the vector standard scanners miss.</div><div class="module-tags"><span class="module-tag hot">JSON-key SQLi</span><span class="module-tag hot">Swagger</span><span class="module-tag">API1</span><span class="module-tag">A03</span></div></div>
+    <div class="module-card new-card"><div class="module-num">03 / PROMPT HUNTER <span class="badge-new">ACTIVE</span></div><div class="module-name">Prompt Hunter</div><div class="module-desc">Finds system prompt storage. Tests if writable. Extracts hardcoded prompts from JS bundles. Tests indirect injection via RAG uploads.</div><div class="module-tags"><span class="module-tag hot">Write access</span><span class="module-tag hot">Crown Jewel</span><span class="module-tag">LLM07</span></div></div>
+    <div class="module-card"><div class="module-num">04 / AI SECURITY</div><div class="module-name">AI / LLM Security</div><div class="module-desc">Prompt injection, jailbreak, data extraction, excessive agency. Auto-registers accounts. Full OWASP LLM Top 10 coverage.</div><div class="module-tags"><span class="module-tag">LLM01</span><span class="module-tag">LLM02</span><span class="module-tag">LLM06</span><span class="module-tag">LLM07</span></div></div>
+    <div class="module-card new-card"><div class="module-num">05 / PROMPT INJECTION <span class="badge-new">ACTIVE</span></div><div class="module-name">Prompt Injection</div><div class="module-desc">Direct and indirect prompt injection attacks against any chat endpoint. System prompt leakage probes. 20+ attack templates per category.</div><div class="module-tags"><span class="module-tag hot">LLM01</span><span class="module-tag hot">Direct</span><span class="module-tag">Indirect</span><span class="module-tag">LLM08</span></div></div>
+    <div class="module-card new-card"><div class="module-num">06 / RAG TESTER <span class="badge-new">ACTIVE</span></div><div class="module-name">RAG Security</div><div class="module-desc">RAG poisoning via document upload, data extraction from retrieval layer, tenant isolation bypass, sensitive data leakage in context.</div><div class="module-tags"><span class="module-tag hot">LLM04</span><span class="module-tag">Poisoning</span><span class="module-tag">Extraction</span></div></div>
+    <div class="module-card new-card"><div class="module-num">07 / AGENT TESTER <span class="badge-new">ACTIVE</span></div><div class="module-name">Agent Security</div><div class="module-desc">Tool misuse, excessive agency, approval workflow bypass, sensitive data extraction via chained agent actions. OWASP LLM06.</div><div class="module-tags"><span class="module-tag hot">LLM06</span><span class="module-tag">Tool abuse</span><span class="module-tag">Agency</span></div></div>
+    <div class="module-card"><div class="module-num">08 / AUTH + JWT</div><div class="module-name">Auth & JWT</div><div class="module-desc">Login brute force, IDOR, privilege escalation, session fixation, JWT algorithm confusion (RS256→HS256), weak secrets, token replay.</div><div class="module-tags"><span class="module-tag">A07</span><span class="module-tag">JWT</span><span class="module-tag">IDOR</span><span class="module-tag">A01</span></div></div>
+    <div class="module-card"><div class="module-num">09 / SSRF + XXE + GraphQL</div><div class="module-name">Injection Suite</div><div class="module-desc">SSRF to cloud metadata, blind SSRF detection, XXE file read, GraphQL introspection + depth bombs + batch abuse. All with 90s hard deadline.</div><div class="module-tags"><span class="module-tag">SSRF</span><span class="module-tag">XXE</span><span class="module-tag">GraphQL</span><span class="module-tag">A03</span></div></div>
+    <div class="module-card new-card"><div class="module-num">10 / CHAIN ENGINE <span class="badge-new">ACTIVE</span></div><div class="module-name">Chain Engine</div><div class="module-desc">Connects findings into attack narratives. Shows real business impact of combined vulnerabilities. CORS + prompt exposure = cross-origin data theft.</div><div class="module-tags"><span class="module-tag hot">Chaining</span><span class="module-tag hot">Escalation</span><span class="module-tag">narrative</span></div></div>
   </div>
 </div>
 </div>
