@@ -1,26 +1,23 @@
 engagement:
-  id: "ENG-001"
-  client_name: "Target Company"
-  tester: "Your Name"
-  company: "Your Company Name"
-  contact_email: "security@yourcompany.com"
+  id: "ENG-DEFAULT"
+  client_name: "Target"
+  tester: "Ricardo Martinez"
+  company: "Inbest"
+  contact_email: "security@inbest.mx"
   location: "México"
   start_date: "2026-01-01"
   end_date: "2026-12-31"
-  authorized_by: "Client Name / Authorization Reference"
+  authorized_by: "Inbest"
   authorization_document: "authorization_letter.pdf"
 
 scope:
   base_urls:
-    - "https://your-target.com"
-    # Add more targets for multi-URL scanning:
-    # - "https://api.your-target.com"
-    # - "https://admin.your-target.com"
+    - "https://target.example.com"
   credentials:
     api_key: ""
     bearer_token: ""
-    username: ""          # For login flow (auth_tester)
-    password: ""          # For login flow (auth_tester)
+    username: ""
+    password: ""
     user_email: ""
     user_password: ""
   endpoints:
@@ -41,18 +38,18 @@ modules:
   rag_tester: true
   agent_tester: true
   trustworthiness: true
-  jwt_tester: true              # JWT/OAuth attack surface
-  ssrf_tester: true             # Server-Side Request Forgery
-  auth_tester: true             # Broken auth, IDOR, privilege escalation
-  graphql_tester: true          # GraphQL introspection, depth bombs, batch abuse
-  business_logic_tester: true   # Price manipulation, payment tampering, coupon abuse
-  subdomain_takeover: true      # Dangling DNS → unclaimed cloud resources
-  xxe_tester: true              # XXE file read, SOAP injection, SVG upload, XML bomb
+  jwt_tester: true
+  ssrf_tester: true
+  auth_tester: true
+  graphql_tester: true
+  business_logic_tester: true
+  subdomain_takeover: true
+  xxe_tester: true
 
 testing:
   request_delay_seconds: 0.5
   max_requests_per_minute: 30
-  timeout_seconds: 15
+  timeout_seconds: 10
   retry_attempts: 2
   max_concurrent_modules: 5
 
@@ -74,6 +71,7 @@ aws:
 integrations:
   teams_webhook_url: ""
   slack_webhook_url: ""
+  platform_api_url: "https://lgbg1u567l.execute-api.us-east-1.amazonaws.com"
+  platform_api_token: "xipe-admin-2026"
 
-anthropic_api_key: ""  # Set via ANTHROPIC_API_KEY env var or SSM Parameter Store
-
+anthropic_api_key: ""  # Set via ANTHROPIC_API_KEY env var in ECS task definition

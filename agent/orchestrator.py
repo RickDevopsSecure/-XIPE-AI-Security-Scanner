@@ -809,6 +809,13 @@ class PentestOrchestrator:
         if os.environ.get("S3_BUCKET"):
             self.config.setdefault("aws", {})["enabled"] = True
             self.config["aws"]["s3_bucket"] = os.environ["S3_BUCKET"]
+        creds = self.config.setdefault("scope", {}).setdefault("credentials", {})
+        if os.environ.get("SCAN_USERNAME"):
+            creds["username"] = os.environ["SCAN_USERNAME"]
+            creds["user_email"] = os.environ.get("SCAN_EMAIL", os.environ["SCAN_USERNAME"])
+        if os.environ.get("SCAN_PASSWORD"):
+            creds["password"] = os.environ["SCAN_PASSWORD"]
+            creds["user_password"] = os.environ["SCAN_PASSWORD"]
 
     def __del__(self):
         if hasattr(self, "http_client"):
