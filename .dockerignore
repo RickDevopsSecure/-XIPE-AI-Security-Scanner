@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+output/
+*.log
+.git/
+*.pdf
+*.html
+xipe-platform/
+config_*.yaml
+!config.yaml
