@@ -11,6 +11,7 @@ El uso no autorizado es ilegal bajo el Código Penal Federal de México
 
 Inbest Cybersecurity — https://inbest.cloud
 """
+import os
 import sys
 import argparse
 import threading
@@ -62,6 +63,14 @@ def main():
         print(f"   Crea uno basándote en config.yaml.example\n")
         sys.exit(1)
     
+    # Cargar config para inyectar API keys al env antes de importar módulos
+    import yaml
+    with open(config_path) as _f:
+        _cfg = yaml.safe_load(_f)
+    _key = _cfg.get("anthropic_api_key", "")
+    if _key and not os.environ.get("ANTHROPIC_API_KEY"):
+        os.environ["ANTHROPIC_API_KEY"] = _key
+
     # Importar aquí para mostrar errores de config antes del import
     from agent.orchestrator import PentestOrchestrator
     
