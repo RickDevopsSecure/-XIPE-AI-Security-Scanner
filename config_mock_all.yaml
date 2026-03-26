@@ -1,0 +1,77 @@
+engagement:
+  id: "ENG-MOCK-ALL"
+  client_name: "Mock Server"
+  tester: "Ricardo Martinez"
+  company: "Inbest"
+  contact_email: "security@inbest.mx"
+  location: "México"
+  start_date: "2026-03-26"
+  end_date: "2026-12-31"
+  authorized_by: "Inbest — Internal Testing"
+  authorization_document: "internal"
+
+scope:
+  base_urls:
+    - "http://localhost:8080"
+  credentials:
+    api_key: ""
+    bearer_token: ""
+    username: "admin"
+    password: "admin"
+    user_email: "admin"
+    user_password: "admin"
+  endpoints:
+    chat: "/api/chat"
+    rag_query: "/api/rag/query"
+    documents: "/api/documents"
+    assistants: "/api/assistants"
+    health: "/health"
+
+modules:
+  web_security: true
+  tls_transport: true
+  js_analysis: true
+  ai_security: true
+  api_mapper: true
+  prompt_hunter: true
+  prompt_injection: true
+  rag_tester: true
+  agent_tester: true
+  trustworthiness: true
+  jwt_tester: true
+  ssrf_tester: true
+  auth_tester: true
+  graphql_tester: true
+  business_logic_tester: true
+  subdomain_takeover: true
+  xxe_tester: true
+
+testing:
+  request_delay_seconds: 0.1
+  max_requests_per_minute: 120
+  timeout_seconds: 5
+  retry_attempts: 1
+  max_concurrent_modules: 8
+
+alerting:
+  min_severity_to_report: "INFO"
+
+output:
+  log_file: "output/mock_all.log"
+  json_results: "output/mock_all_findings.json"
+  pdf_report: "output/mock_all_report.pdf"
+  dashboard_port: 5001
+
+aws:
+  enabled: false
+  region: "us-east-1"
+  s3_bucket: ""
+  ecs_cluster: ""
+
+integrations:
+  teams_webhook_url: ""
+  slack_webhook_url: ""
+  platform_api_url: ""
+  platform_api_token: ""
+
+anthropic_api_key: ""

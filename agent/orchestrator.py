@@ -29,6 +29,9 @@ from modules.ai_security import AISecurityModule
 from modules.js_analyzer import JSAnalyzer
 from modules.tls_checker import TLSChecker
 from modules.session_checker import SessionChecker
+from modules.prompt_injection import PromptInjectionTester
+from modules.rag_tester import RAGTester
+from modules.agent_tester import AgentTester
 from modules.wordpress_scanner import WordPressScanner
 from modules import (jwt_tester, ssrf_tester, auth_tester,
                      graphql_tester, business_logic_tester,
@@ -322,29 +325,40 @@ class PentestOrchestrator:
 
         tasks = []
 
-        # config modules section is authoritative — if set to false it overrides brain plan
+        # config modules section is authoritative:
+        #   false  → never run (even if brain wants it)
+        #   true   → always run (even if brain didn't plan it)
+        #   absent → follow brain plan (with default fallback)
         def _enabled(key: str, default: bool = True) -> bool:
             cfg_val = mods_cfg.get(key)
             if cfg_val is False:
                 return False
+            if cfg_val is True:
+                return True
             return plan.get(key, default)
 
         if _enabled("web_security"):
             tasks.append(("Web Security", self._run_web_security))
         if _enabled("tls_transport"):
             tasks.append(("TLS / Transport", self._run_tls))
-        if _enabled("js_analysis") and self.classification.get("is_spa"):
+        if _enabled("js_analysis") and (self.classification.get("is_spa") or mods_cfg.get("js_analysis") is True):
             tasks.append(("JavaScript Analysis", self._run_js_analysis))
         if _enabled("session_security", False) and self.classification.get("is_authenticated"):
             tasks.append(("Session Security", self._run_session))
         if _enabled("api_security", False) and self.classification.get("has_api"):
             tasks.append(("API Security", self._run_api_security))
-        if _enabled("ai_security", False) and self.classification.get("has_ai"):
+        if _enabled("ai_security", False) and (self.classification.get("has_ai") or mods_cfg.get("ai_security") is True):
             tasks.append(("AI Security", self._run_ai_security))
         if _enabled("api_mapper"):
             tasks.append(("API Mapper", self._run_api_mapper))
-        if _enabled("prompt_hunter") and (self.classification.get("has_ai") or self.classification.get("has_api")):
+        if _enabled("prompt_hunter") and (self.classification.get("has_ai") or self.classification.get("has_api") or mods_cfg.get("prompt_hunter") is True):
             tasks.append(("Prompt Hunter", self._run_prompt_hunter))
+        if _enabled("prompt_injection", False) and (self.classification.get("has_ai") or mods_cfg.get("prompt_injection") is True):
+            tasks.append(("Prompt Injection", self._run_prompt_injection))
+        if _enabled("rag_tester", False) and (self.classification.get("has_ai") or mods_cfg.get("rag_tester") is True):
+            tasks.append(("RAG Tester", self._run_rag_tester))
+        if _enabled("agent_tester", False) and (self.classification.get("has_ai") or mods_cfg.get("agent_tester") is True):
+            tasks.append(("Agent Tester", self._run_agent_tester))
         if mods_cfg.get("jwt_tester", True):
             tasks.append(("JWT/OAuth Tester", self._run_jwt_tester))
         if mods_cfg.get("ssrf_tester", True):
@@ -449,6 +463,18 @@ class PentestOrchestrator:
         auth_token = self._auth_headers.get("Authorization", "").replace("Bearer ", "") or None
         mod = PromptHunter(self.config, self.logger, self.http_client,
                           self.brain, self.classification, auth_token)
+        return mod.run()
+
+    def _run_prompt_injection(self) -> list:
+        mod = PromptInjectionTester(self.config, self.logger, self.http_client)
+        return mod.run()
+
+    def _run_rag_tester(self) -> list:
+        mod = RAGTester(self.config, self.logger, self.http_client)
+        return mod.run()
+
+    def _run_agent_tester(self) -> list:
+        mod = AgentTester(self.config, self.logger, self.http_client)
         return mod.run()
 
     def _run_jwt_tester(self) -> list:
