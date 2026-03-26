@@ -18,9 +18,16 @@ import threading
 from pathlib import Path
 
 
+def _get_version() -> str:
+    try:
+        return (Path(__file__).parent / "VERSION").read_text().strip()
+    except Exception:
+        return "unknown"
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Inbest AI Pentesting Framework",
+        description=f"XIPE AI Security Scanner v{_get_version()} — Inbest Cybersecurity",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos:
@@ -28,11 +35,18 @@ Ejemplos:
   python main.py --config config.yaml --dashboard
   python main.py --config config.yaml --modules api,prompt_injection
   python main.py --config config.yaml --dashboard --dashboard-port 8080
+
+Actualizar:
+  bash update.sh
         """
     )
     parser.add_argument(
-        "--config", required=True,
+        "--config", default=None,
         help="Ruta al archivo de configuración YAML del engagement"
+    )
+    parser.add_argument(
+        "--version", action="store_true",
+        help="Mostrar versión actual y salir"
     )
     parser.add_argument(
         "--dashboard", action="store_true",
@@ -55,7 +69,18 @@ Ejemplos:
 
 def main():
     args = parse_args()
-    
+
+    if args.version:
+        print(f"XIPE AI Security Scanner v{_get_version()}")
+        print("Inbest Cybersecurity — https://inbest.cloud")
+        sys.exit(0)
+
+    if not args.config:
+        print(f"\n❌ Error: --config es requerido\n")
+        print("  Ejemplo: python main.py --config config.yaml")
+        print("  Actualizar: bash update.sh\n")
+        sys.exit(1)
+
     # Verificar que el config existe
     config_path = Path(args.config)
     if not config_path.exists():
